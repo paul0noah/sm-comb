@@ -1,0 +1,15 @@
+[submodule "c++/external/eigen"]
+	path = c++/external/eigen
+	url = https://gitlab.com/libeigen/eigen.git
+[submodule "c++/external/libigl"]
+	path = c++/external/libigl
+	url = https://github.com/libigl/libigl.git
+[submodule "c++/external/bdd"]
+	path = c++/external/bdd
+	url = https://github.com/LPMP/BDD.git
+[submodule "c++/external/robin-map"]
+	path = c++/external/robin-map
+	url = https://github.com/Tessil/robin-map.git
+[submodule "c++/external/tri-mesh-hole-closer"]
+	path = c++/external/tri-mesh-hole-closer
+	url = git@github.com:paul0noah/tri-mesh-hole-closer.git

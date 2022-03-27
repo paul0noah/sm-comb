@@ -1,0 +1,6 @@
+*.DS_STORE
+c++/build
+c++/XCodeProject
+matlab/src/constraints/helper/codegen/*
+matlab/src/solveShapeMatch/output/*
+matlab/data/debugShapes/*

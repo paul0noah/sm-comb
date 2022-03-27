@@ -1,0 +1,10 @@
+target_sources(${PROJECT_NAME} 
+				PRIVATE
+					bendingEnergy.cpp
+					bendingEnergy.hpp
+					membraneEnergy.cpp
+					membraneEnergy.hpp
+					deformationEnergy.cpp
+					deformationEnergy.hpp
+					wksEnergy.cpp
+					wksEnergy.hpp)

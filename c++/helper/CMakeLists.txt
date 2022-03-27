@@ -1,0 +1,10 @@
+target_sources(${PROJECT_NAME} 
+				PRIVATE
+					utils.cpp
+					utils.hpp
+					shape.cpp
+                    			shape.hpp
+					nonWatertightMeshHandler.cpp
+					nonWatertightMeshHandler.hpp
+					partialShapesHandler.cpp
+					partialShapesHandler.hpp)
