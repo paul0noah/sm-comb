@@ -1,3 +1,3 @@
 #!/bin/bash
 ./BUILD.sh
-./build/shape-matching-dd
+./build/shape_matching_dd

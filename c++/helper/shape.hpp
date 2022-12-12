@@ -37,7 +37,9 @@ private:
 public:
     Shape();
     Shape(std::string filename);
+    Shape(std::string filename, int numFaces);
     Shape(Eigen::MatrixXf Vinp, Eigen::MatrixXi Finp);
+    Shape(Eigen::MatrixXf Vinp, Eigen::MatrixXi Finp, int numFaces);
     const long getNumFaces();
     const long getNumEdges();
     const long getNumVertices();

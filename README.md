@@ -134,6 +134,79 @@ Dual Solver options
     bddSolverOpts.tolerance = 1e-6;
 ```
 
+## Python bindings
+Reduced functionality is available in python as python bindings, including: 
+- creating `ShapeMatchModel`
+- solving ILP
+- plotting solution 
+- returning point correspondences
+- updating the energy
+
+### Warning
+Python bindings are still under development. Expect issues :D 
+
+### Usage 
+- navigate with terminal to `c++` folder of repository
+- run `python3 setup.py install` (requires python3)
+- use python bindings as shown with following example code
+    ```
+    from shape_match_model_pb import ShapeMatchModel
+    import numpy as np
+    from scipy import sparse
+
+    # create smm model in which shapes X and Y (.ply or .off files) are reduced to 100 and 110 triangles respectively
+    # (if each shape contains already less triangles, the shapes are not reduced)
+    # Note: size of ILP grows quadratically with number of triangles of one of the shape 
+    # We recommend using less than 1000 triangles for each shape
+    smm = ShapeMatchModel("yourFile1{.ply, .off}", 100, "yourFile2{.ply, .off}", 110)
+
+    # solve the LP (with our combinatorial solver) and obtain binary vector G
+    G = smm.solve()
+
+    # convert G to sparse int8 matrix
+    sG = sparse.csr_matrix(G, dtype=np.int8)
+
+    # get point correspondences from solution
+    p_c = smm.getPointMatchesFromSolution(sG)
+
+    # plot result color coded
+    smm.plotSolution(sG)
+    ``` 
+
+
+### Usage For Local Build
+- navigate with terminal to `c++` folder of repository
+- run `BUILD_PB.sh` (which creates folder `smpb` in `c++` folder and builds python bindings)
+- use python bindings as shown with following example code (assuming root directory is `c++` folder)
+    ```
+    from smpb.shape_match_model_pb import ShapeMatchModel
+    import numpy as np
+    from scipy import sparse
+
+    # create smm model in which shapes X and Y (.ply or .off files) are reduced to 100 and 110 triangles respectively
+    # (if each shape contains already less triangles, the shapes are not reduced)
+    # Note: size of ILP grows quadratically with number of triangles of one of the shape 
+    # We recommend using less than 1000 triangles for each shape
+    smm = ShapeMatchModel("yourFile1{.ply, .off}", 100, "yourFile2{.ply, .off}", 110)
+
+    # solve the LP (with our combinatorial solver) and obtain binary vector G
+    A = # |VX| x |VY| EigenXf matrix containing similarity values for every pair of vertices (smaller values == more similar)  
+    useAreaWeighting = true
+    G = smm.updateEnergy(useAreaWeighting)
+    
+    # solve the LP (with our combinatorial solver) and obtain binary vector G
+    G = smm.solve()
+
+    # convert G to sparse int8 matrix
+    sG = sparse.csr_matrix(G, dtype=np.int8)
+
+    # get point correspondences from solution
+    p_c = smm.getPointMatchesFromSolution(sG)
+
+    # plot result color coded
+    smm.plotSolution(sG)
+    ``` 
+
 ## Used Libraries
 | Lib Name | Functionality |
 | ------ | ------ |

@@ -11,3 +11,7 @@ target_sources(${PROJECT_NAME}
 					primalHeuristic.hpp
 					plotSolution.cpp
 	)
+
+if( BUILD_PYTHON_BINDINGS )
+	target_sources(${PROJECT_NAME} PRIVATE shapeMatchModelPB.cpp)
+endif()

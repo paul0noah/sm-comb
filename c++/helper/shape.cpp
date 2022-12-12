@@ -23,6 +23,12 @@ Shape::Shape() {
     F = Eigen::MatrixXi(0, 0);
 }
 
+Shape::Shape(std::string filename, int numFaces) :
+    Shape(filename) {
+    reduce(numFaces);
+    initShape();
+}
+
 Shape::Shape(std::string filename) {
     Eigen::MatrixXd Vinp;
     std::string fileextension = filename.substr(filename.find_last_of(".") + 1);
@@ -42,6 +48,13 @@ Shape::Shape(std::string filename) {
 Shape::Shape(Eigen::MatrixXf Vinp, Eigen::MatrixXi Finp) {
     V = Vinp;
     F = Finp;
+    initShape();
+}
+
+Shape::Shape(Eigen::MatrixXf Vinp, Eigen::MatrixXi Finp, int numFaces) {
+    V = Vinp;
+    F = Finp;
+    reduce(numFaces);
     initShape();
 }
 

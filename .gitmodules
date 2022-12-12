@@ -13,3 +13,6 @@
 [submodule "c++/external/tri-mesh-hole-closer"]
 	path = c++/external/tri-mesh-hole-closer
 	url = git@github.com:paul0noah/tri-mesh-hole-closer.git
+[submodule "c++/external/pybind11"]
+	path = c++/external/pybind11
+	url = https://github.com/pybind/pybind11.git

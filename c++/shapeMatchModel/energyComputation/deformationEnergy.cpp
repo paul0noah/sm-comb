@@ -128,6 +128,45 @@ void DeformationEnergy::modifyEnergyVal(const int index, float newVal) {
 }
 
 
+void DeformationEnergy::useCustomDeformationEnergy(const Eigen::MatrixXf& Vx2VyCostMatrix, bool useAreaWeighting) {
+    const bool useTranspose = Vx2VyCostMatrix.rows() != shapeA.getNumVertices();
+
+    const Eigen::MatrixXi& FaCombo = combos.getFaCombo();
+    const Eigen::MatrixXi& FbCombo = combos.getFbCombo();
+
+    Eigen::ArrayXXf energy(FaCombo.rows(), 3);
+
+    if (useAreaWeighting) {
+        // Init curvature and area vectors
+        Eigen::VectorXf Aa(shapeA.getNumFaces());
+        Eigen::VectorXf Ab(shapeB.getNumFaces());
+
+        energy(Eigen::all, 0) = Aa(FaCombo(Eigen::all, 0)) + Ab(FbCombo(Eigen::all, 0));
+        energy(Eigen::all, 1) = energy(Eigen::all, 0);
+        energy(Eigen::all, 2) = energy(Eigen::all, 0);
+    }
+    else {
+        energy.setOnes();
+
+    }
+
+    Eigen::ArrayXXf temp(FaCombo.rows(), 3);
+    if (useTranspose) {
+        for (int i = 0; i < 3; i++) {
+            temp(Eigen::all, i) = Vx2VyCostMatrix(FaCombo(Eigen::all, i), FbCombo(Eigen::all, i));
+        }
+    }
+    else {
+        for (int i = 0; i < 3; i++) {
+            temp(Eigen::all, i) = Vx2VyCostMatrix(FbCombo(Eigen::all, i), FaCombo(Eigen::all, i));
+        }
+    }
+
+    // update energy
+    defEnergy = energy.cwiseProduct(temp.square());
+}
+
+
 /* REFERENCES:
  (1) WINDHEUSER, Thomas, et al. Large‐scale integer linear programming for
      orientation preserving 3d shape matching. In: Computer Graphics Forum.

@@ -111,6 +111,34 @@ ShapeMatchModel::ShapeMatchModel(Shape &sX, Shape & sY, ShapeMatchModelOpts opts
         opts = optsIn;
 }
 
+ShapeMatchModel::ShapeMatchModel(Eigen::MatrixXi FX, Eigen::MatrixXf VX, Eigen::MatrixXi FY, Eigen::MatrixXf VY):
+    shapeX(Shape(VX, FX)),
+    shapeY(Shape(VY, FY)),
+    combos(shapeX, shapeY),
+    constr(shapeX, shapeY, combos),
+    deformationEnergy(shapeX, shapeY, combos),
+    ilpGenerated(false),
+    minMarginals(combos.getFaCombo().rows(), 1),
+    minMarginalsComputed(false),
+    bddsolver(NULL) {
+    ilp = LPMP::ILP_input();
+    generate();
+}
+
+ShapeMatchModel::ShapeMatchModel(std::string filenameShapeX, int numFacesX, std::string filenameShapeY, int numFacesY):
+    shapeX(filenameShapeX, numFacesX),
+    shapeY(filenameShapeY, numFacesY),
+    combos(shapeX, shapeY),
+    constr(shapeX, shapeY, combos),
+    deformationEnergy(shapeX, shapeY, combos),
+    ilpGenerated(false),
+    minMarginals(combos.getFaCombo().rows(), 1),
+    minMarginalsComputed(false)
+{
+    ilp = LPMP::ILP_input();
+    generate();
+}
+
 ShapeMatchModel::ShapeMatchModel(std::string filenameShapeX, std::string filenameShapeY):
     shapeX(filenameShapeX),
     shapeY(filenameShapeY),
@@ -252,6 +280,13 @@ void ShapeMatchModel::saveIlpAsLp(const std::string& filename) {
     }
     ilp.write_lp(file);
     std::cout << "[ShapeMM] Successfully written lp file" << std::endl;
+}
+
+/* function saveIlpAsLp
+
+ */
+void ShapeMatchModel::updateEnergy(const Eigen::MatrixXf& Vx2VyCost, bool weightWithAreas) {
+    deformationEnergy.useCustomDeformationEnergy(Vx2VyCost, weightWithAreas);
 }
 
 
@@ -533,6 +568,34 @@ int numVarCandidates(Eigen::SparseMatrix<int8_t> &Gamma) {
         }
     }
     return numCandidates;
+}
+
+Eigen::MatrixXi ShapeMatchModel::getPointMatchesFromSolution(const SparseVecInt8 &Gamma) {
+    const Eigen::MatrixXi FXCombo = getCombinations().getFaCombo();
+    const Eigen::MatrixXi FYCombo = getCombinations().getFbCombo();
+    std::set<std::tuple<int, int>> matchings;
+
+    // extract all matchings
+    for (typename Eigen::SparseVector<int8_t, Eigen::RowMajor>::InnerIterator it(Gamma); it; ++it) {
+        const int idx = it.index();
+
+        Eigen::MatrixXi faceX = FXCombo.row(idx);
+        Eigen::MatrixXi faceY = FYCombo.row(idx);
+
+        for (int i = 0; i < 3; i++) {
+            // std::set keeps track if we already added a matching
+            matchings.insert(std::make_tuple(faceX(i), faceY(i)));
+        }
+    }
+
+    Eigen::MatrixXi matchingMatrix(matchings.size(), 2);
+    int idx = 0;
+    for (auto matching : matchings) {
+        matchingMatrix(idx, 0) = std::get<0>(matching);
+        matchingMatrix(idx, 1) = std::get<1>(matching);
+        idx++;
+    }
+    return matchingMatrix;
 }
 
 MatrixInt8 ShapeMatchModel::solve() {

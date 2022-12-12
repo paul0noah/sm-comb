@@ -1,4 +1,4 @@
-project(shape-matching-dd)
+project(shape_matching_dd)
 
 cmake_minimum_required(VERSION 3.13)
 
@@ -10,8 +10,21 @@ set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 # make project executable
-add_executable(${PROJECT_NAME} main.cpp)
+if( BUILD_PYTHON_BINDINGS )
+    message("Building Python Bindings")
+    set(PROJECT_NAME shape_match_model_pb)
+else()
+    message("Building CPP Executable")
+    add_executable(${PROJECT_NAME} main.cpp)
+endif()
 
+# python bindings
+add_subdirectory(external/pybind11)
+pybind11_add_module(shape_match_model_pb shapeMatchModel/shapeMatchModelPB.cpp)
+find_package(Python3 REQUIRED)
+include_directories(${PYTHON_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME} PUBLIC external/pybind11/include)
+message(ERROR ${PROJECT_NAME})
 
 # libigl
 option(LIBIGL_WITH_OPENGL            "Use OpenGL"         ON)
@@ -35,24 +48,26 @@ target_include_directories(${PROJECT_NAME} PUBLIC external/robin-map)
 target_include_directories(${PROJECT_NAME} PUBLIC external/bdd/include/)
 add_subdirectory(external/bdd)
 
+
 # open mp (for parallel execution)
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
-target_link_libraries(${PROJECT_NAME}
-			LPMP-BDD
-			igl::core
-			igl::opengl_glfw
-			OpenMP::OpenMP_CXX
-			tri-mesh-hole-closer
-			)
+target_link_libraries(${PROJECT_NAME} PRIVATE
+            LPMP-BDD
+            igl::core
+            igl::opengl_glfw
+            OpenMP::OpenMP_CXX
+            tri-mesh-hole-closer
+            )
 else()
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(${PROJECT_NAME} PRIVATE
 			LPMP-BDD
 			igl::core
 			igl::opengl_glfw
 			tri-mesh-hole-closer
 			)
 endif()
+
 
 # set project include dir
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR})

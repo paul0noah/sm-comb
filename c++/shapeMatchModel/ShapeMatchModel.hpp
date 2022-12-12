@@ -76,7 +76,6 @@ private:
     std::string getVariableName(int idx, Eigen::MatrixXi &FaCombo, Eigen::MatrixXi &FbCombo);
     LPMP::ILP_input ilp;
     bool ilpGenerated;
-    LPMP::ILP_input getIlpObj();
     bool minMarginalsComputed;
     Eigen::MatrixXf minMarginals;
     ShapeMatchModelOpts opts;
@@ -91,7 +90,9 @@ public:
     ShapeMatchModel(std::string modelname, ShapeMatchModelOpts optsIn);
     ShapeMatchModel(Shape &sX, Shape & sY);
     ShapeMatchModel(Shape &sX, Shape & sY, ShapeMatchModelOpts optsIn);
+    ShapeMatchModel(Eigen::MatrixXi FX, Eigen::MatrixXf VX, Eigen::MatrixXi FY, Eigen::MatrixXf VY);
     ShapeMatchModel(std::string filenameShapeX, std::string filenameShapeY);
+    ShapeMatchModel(std::string filenameShapeX, int numFacesX, std::string filenameShapeY, int numFacesY);
     ShapeMatchModel(std::string filenameShapeX, std::string filenameShapeY, ShapeMatchModelOpts opts);
     ~ShapeMatchModel();
     void saveAsLp(const std::string& filename);
@@ -100,6 +101,7 @@ public:
     Eigen::MatrixXf getDeformationEnergy();
     SparseMatInt8 getConstraintsMatrix();
     SparseVecInt8 getConstraintsVector();
+    LPMP::ILP_input getIlpObj();
     void plotSolution(const SparseVecInt8 &G);
     void plotInterpolatedSolution(const SparseVecInt8 &G);
     MatrixInt8 solve();
@@ -108,6 +110,8 @@ public:
     MatrixInt8 readSolutionFromFile(std::string filename);
     MatrixInt8 readSolutionFromFile();
     void writeModelToFile();
+    Eigen::MatrixXi getPointMatchesFromSolution(const SparseVecInt8 &Gamma);
+    void updateEnergy(const Eigen::MatrixXf& Vx2VyCost, bool weightWithAreas);
 };
 
 #endif /* ShapeMatchModel_hpp */
