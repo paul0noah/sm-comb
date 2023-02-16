@@ -84,6 +84,7 @@ private:
     Eigen::MatrixXf getMinMarginals(Eigen::SparseMatrix<int8_t> &Gamma, bool gammaEmpty);
     LPMP::bdd_solver* bddsolver;
     NonWatertightMeshHandler nonWatertightMeshHandler;
+    float initialLowerBound;
     
 public:
     ShapeMatchModel(std::string modelname);
@@ -113,6 +114,7 @@ public:
     Eigen::MatrixXi getPointMatchesFromSolution(const SparseVecInt8 &Gamma);
     void updateEnergy(const Eigen::MatrixXf& Vx2VyCost, bool weightWithAreas);
     float getFinalEnergy(const SparseVecInt8 &Gamma);
+    float getLowerBound();
 };
 
 #endif /* ShapeMatchModel_hpp */

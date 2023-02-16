@@ -44,6 +44,7 @@ bool ShapeMatchModel::checkWatertightness() {
 
 
 void ShapeMatchModel::generate() {
+    initialLowerBound = -1;
     if (!checkWatertightness()) return;
     if (opts.verbose) std::cout << "[ShapeMM] Generating Shape Match Model..." << std::endl;
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
@@ -505,6 +506,8 @@ Eigen::MatrixXf ShapeMatchModel::getMinMarginals(Eigen::SparseMatrix<int8_t> &Ga
 
     // solve and retrieve dual costs
     bddsolver->solve();
+    if (initialLowerBound == -1)
+        initialLowerBound = bddsolver->lower_bound();
     std::vector<double> minMargVec;
 
     const double eps = 1e-7;
@@ -602,6 +605,10 @@ float ShapeMatchModel::getFinalEnergy(const SparseVecInt8 &Gamma) {
     const Eigen::VectorXf cost = deformationEnergy.get().col(0);
     const Eigen::VectorXf result = Gamma.cast<float>().col(0);
     return cost.transpose() * result;
+}
+
+float ShapeMatchModel::getLowerBound() {
+    return initialLowerBound;
 }
 
 MatrixInt8 ShapeMatchModel::solve() {
