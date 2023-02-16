@@ -26,6 +26,7 @@ PYBIND11_MODULE(shape_match_model_pb, handle) {
     smm.def("getPointMatchesFromSolution", &ShapeMatchModel::getPointMatchesFromSolution);
     smm.def("plotSolution", &ShapeMatchModel::plotInterpolatedSolution);
     smm.def("getIlpObj", &ShapeMatchModel::getIlpObj);
+    smm.def("getFinalEnergy", &ShapeMatchModel::getFinalEnergy);
 
     py::class_<LPMP::ILP_input>(handle, "ILP_instance")
         .def(py::init<>());

@@ -112,6 +112,7 @@ public:
     void writeModelToFile();
     Eigen::MatrixXi getPointMatchesFromSolution(const SparseVecInt8 &Gamma);
     void updateEnergy(const Eigen::MatrixXf& Vx2VyCost, bool weightWithAreas);
+    float getFinalEnergy(const SparseVecInt8 &Gamma);
 };
 
 #endif /* ShapeMatchModel_hpp */

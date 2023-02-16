@@ -598,6 +598,12 @@ Eigen::MatrixXi ShapeMatchModel::getPointMatchesFromSolution(const SparseVecInt8
     return matchingMatrix;
 }
 
+float ShapeMatchModel::getFinalEnergy(const SparseVecInt8 &Gamma) {
+    const Eigen::VectorXf cost = deformationEnergy.get().col(0);
+    const Eigen::VectorXf result = Gamma.cast<float>().col(0);
+    return cost.transpose() * result;
+}
+
 MatrixInt8 ShapeMatchModel::solve() {
 
     bool gammaEmpty = true;
