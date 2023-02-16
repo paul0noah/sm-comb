@@ -85,6 +85,7 @@ private:
     LPMP::bdd_solver* bddsolver;
     NonWatertightMeshHandler nonWatertightMeshHandler;
     float initialLowerBound;
+    bool generationSuccessfull;
     
 public:
     ShapeMatchModel(std::string modelname);
@@ -115,6 +116,7 @@ public:
     void updateEnergy(const Eigen::MatrixXf& Vx2VyCost, bool weightWithAreas);
     float getFinalEnergy(const SparseVecInt8 &Gamma);
     float getLowerBound();
+    bool smmCreatedSuccessFully();
 };
 
 #endif /* ShapeMatchModel_hpp */

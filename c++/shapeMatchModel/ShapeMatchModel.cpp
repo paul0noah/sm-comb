@@ -45,6 +45,7 @@ bool ShapeMatchModel::checkWatertightness() {
 
 void ShapeMatchModel::generate() {
     initialLowerBound = -1;
+    generationSuccessfull = false;
     if (!checkWatertightness()) return;
     if (opts.verbose) std::cout << "[ShapeMM] Generating Shape Match Model..." << std::endl;
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
@@ -68,6 +69,11 @@ void ShapeMatchModel::generate() {
     std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
     if (opts.verbose) std::cout << "[ShapeMM]   Done (" << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count() << "  [ms])" << std::endl;
     if (opts.verbose) std::cout << "[ShapeMM] Done (" << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t1).count() << "  [ms])" << std::endl;
+    generationSuccessfull = true;
+}
+
+bool ShapeMatchModel::smmCreatedSuccessFully() {
+    return generationSuccessfull;
 }
 
 
@@ -603,7 +609,7 @@ Eigen::MatrixXi ShapeMatchModel::getPointMatchesFromSolution(const SparseVecInt8
 
 float ShapeMatchModel::getFinalEnergy(const SparseVecInt8 &Gamma) {
     const Eigen::VectorXf cost = deformationEnergy.get().col(0);
-    const Eigen::VectorXf result = Gamma.cast<float>().col(0);
+    const Eigen::VectorXf result(Gamma.cast<float>());
     return cost.transpose() * result;
 }
 
