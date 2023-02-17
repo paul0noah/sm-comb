@@ -14,7 +14,7 @@
 #include "helper/nonWatertightMeshHandler.hpp"
 #include "shapeMatchModel/energyComputation/deformationEnergy.hpp"
 #include "shapeMatchModel/constraintsComputation/constraints.hpp"
-#include "shapeMatchModel/ShapeMatchModel.hpp"
+#include "shapeMatchModel/shapeMatchModel.hpp"
 #include "test/exampleshapes.hpp";
 
 
