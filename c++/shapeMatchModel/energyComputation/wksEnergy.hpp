@@ -17,7 +17,7 @@ private:
     float getVoronoiArea(int i, Shape &shape, int neighboor, Eigen::MatrixXf &cotTriangleAngles);
     float getMixedArea(int i, Shape &shape, Eigen::VectorXi &oneRingNeighboorhood, Eigen::MatrixXf &triangleAngles, Eigen::MatrixXf &cotTriangleAngles);
     void getA(Shape &shape, Eigen::VectorXf &A);
-    void getWKS(Shape &shape, Eigen::MatrixXf& WKS, const int wksSize, const int wksVariance, const int numEigenFunctions);
+    bool getWKS(Shape &shape, Eigen::MatrixXf& WKS, const int wksSize, const int wksVariance, const int numEigenFunctions);
 
 public:
     WKSEnergy();

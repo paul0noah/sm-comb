@@ -132,7 +132,7 @@ WKSEnergy::WKSEnergy(){
 
 }
 
-void WKSEnergy::getWKS(Shape &shape, Eigen::MatrixXf& WKS, const int wksSize, const int wksVariance, int numEigenFunctions) {
+bool WKSEnergy::getWKS(Shape &shape, Eigen::MatrixXf& WKS, const int wksSize, const int wksVariance, int numEigenFunctions) {
     Eigen::SparseMatrix<double> L, M;
     igl::cotmatrix(shape.getV(), shape.getF(), L);
     L = (-L).eval();
@@ -145,7 +145,7 @@ void WKSEnergy::getWKS(Shape &shape, Eigen::MatrixXf& WKS, const int wksSize, co
         numEigenFunctions = 2;
         if (!igl::eigs(L, M, numEigenFunctions+1, igl::EIGS_TYPE_SM, Evecs, Evals)) {
             std::cout << "Exiting program because of WKS errors"<< std::endl;
-            exit(0);
+            return false;
         }
     }
 
@@ -184,6 +184,7 @@ void WKSEnergy::getWKS(Shape &shape, Eigen::MatrixXf& WKS, const int wksSize, co
     for (int i = 0; i < shape.getNumVertices(); i++) {
         WKS(i, Eigen::all) = ( WKS(i, Eigen::all).array() / C.array()).matrix();
     }
+    return true;
 }
 
 
@@ -210,8 +211,10 @@ Eigen::MatrixXf WKSEnergy::get(Shape &shapeA, Shape &shapeB, Eigen::MatrixXi &Fa
     getA(shapeB, Ab);
 
 
-    getWKS(shapeA, WKSa, wksSize, wksVariance, numEigenFunctions);
-    getWKS(shapeB, WKSb, wksSize, wksVariance, numEigenFunctions);
+    if (!getWKS(shapeA, WKSa, wksSize, wksVariance, numEigenFunctions))
+        return Eigen::MatrixXf(FaCombo.rows(), 1).setZero();
+    if (!getWKS(shapeB, WKSb, wksSize, wksVariance, numEigenFunctions))
+        return Eigen::MatrixXf(FaCombo.rows(), 1).setZero();
 
 
     Eigen::ArrayXXf bendingEnergy(FaCombo.rows(), 3);
