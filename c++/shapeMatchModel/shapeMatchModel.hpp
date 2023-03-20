@@ -117,8 +117,8 @@ public:
     float getFinalEnergy(const SparseVecInt8 &Gamma);
     float getLowerBound();
     bool smmCreatedSuccessFully();
-    Eigen::MatrixXi getFaCombo() const;
-    Eigen::MatrixXi getFbCombo() const;
+    Eigen::MatrixXi& getFaCombo();
+    Eigen::MatrixXi& getFbCombo();
 };
 
 #endif /* ShapeMatchModel_hpp */
