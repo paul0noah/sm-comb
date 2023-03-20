@@ -613,6 +613,13 @@ float ShapeMatchModel::getFinalEnergy(const SparseVecInt8 &Gamma) {
     return cost.transpose() * result;
 }
 
+Eigen::MatrixXi ShapeMatchModel::getFaCombo() const {
+    return combos.getFaCombo();
+}
+Eigen::MatrixXi ShapeMatchModel::getFbCombo() const {
+    return combos.getFbCombo();
+}
+
 float ShapeMatchModel::getLowerBound() {
     return initialLowerBound;
 }

@@ -29,6 +29,8 @@ PYBIND11_MODULE(shape_match_model_pb, handle) {
     smm.def("getFinalEnergy", &ShapeMatchModel::getFinalEnergy);
     smm.def("getLowerBound", &ShapeMatchModel::getLowerBound);
     smm.def("smmCreatedSuccessFully", &ShapeMatchModel::smmCreatedSuccessFully);
+    smm.def("getFXCombo", &ShapeMatchModel::getFaCombo);
+    smm.def("getFYCombo", &ShapeMatchModel::getFbCombo);
 
 
     py::class_<LPMP::ILP_input>(handle, "ILP_instance")
