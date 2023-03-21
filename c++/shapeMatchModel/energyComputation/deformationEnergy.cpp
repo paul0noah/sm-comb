@@ -96,15 +96,15 @@ Eigen::MatrixXf DeformationEnergy::get() {
     }
 
     deformationEnergy = (deformationEnergy.array() * (1.0f/ deformationEnergy.mean()) ).matrix();
-    std::cout << "Mean membrane energy " <<  deformationEnergy.mean() << std::endl;
+    //std::cout << "Mean membrane energy " <<  deformationEnergy.mean() << std::endl;
     // bending energy is easier to handle ;)
     const Eigen::MatrixXf bendE = bendingEnergy.get(shapeA, shapeB, FaCombo, FbCombo);
     deformationEnergy += lambda * (bendE.array() * (1.0f / bendE.mean())).matrix();
     if (mu > 0) {
         WKSEnergy wksEnergy = WKSEnergy();
         const Eigen::MatrixXf wksE = wksEnergy.get(shapeA, shapeB, FaCombo, FbCombo);
-        std::cout << "Mean wks energy " << wksE.mean() << std::endl;
-        std::cout << "Mean bending energy " << bendingEnergy.get(shapeA, shapeB, FaCombo, FbCombo).mean() << std::endl;
+        //std::cout << "Mean wks energy " << wksE.mean() << std::endl;
+        //std::cout << "Mean bending energy " << bendingEnergy.get(shapeA, shapeB, FaCombo, FbCombo).mean() << std::endl;
         deformationEnergy += mu * (wksE.array() * (1.0f / wksE.mean()) ).matrix();
     }
     
