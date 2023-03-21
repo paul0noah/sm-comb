@@ -106,8 +106,7 @@ float WKSEnergy::getMixedArea(int i, Shape &shape, Eigen::VectorXi &oneRingNeigh
 }
 
 
-/* function getMeanCurvatures
-    computes the mean curvatures for each vertex as proposed in (2)
+/* function getA
  */
 void WKSEnergy::getA(Shape &shape, Eigen::VectorXf &A) {
 
@@ -122,7 +121,7 @@ void WKSEnergy::getA(Shape &shape, Eigen::VectorXf &A) {
 
     Eigen::VectorXi oneRingNeighboorhood;
     Eigen::MatrixXf sumOverOneRingNeighborhood;
-    for (int i = 0; i < A.rows(); i++) {
+    for (int i = 0; i < shape.getNumVertices(); i++) {
         oneRingNeighboorhood = shape.getTrianglesAttachedToVertex(i);
         A(i) = getMixedArea(i, shape, oneRingNeighboorhood, triangleAngles, cotTriangleAngles);
     }
@@ -204,8 +203,8 @@ Eigen::MatrixXf WKSEnergy::get(Shape &shapeA, Shape &shapeB, Eigen::MatrixXi &Fa
     Eigen::MatrixXf WKSa(shapeA.getNumVertices(), wksSize);
     Eigen::MatrixXf WKSb(shapeB.getNumVertices(), wksSize);
 
-    Eigen::VectorXf Aa(shapeA.getNumFaces());
-    Eigen::VectorXf Ab(shapeB.getNumFaces());
+    Eigen::VectorXf Aa(shapeA.getNumVertices());
+    Eigen::VectorXf Ab(shapeB.getNumVertices());
 
     getA(shapeA, Aa);
     getA(shapeB, Ab);
