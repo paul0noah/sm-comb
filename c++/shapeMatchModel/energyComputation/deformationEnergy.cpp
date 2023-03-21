@@ -138,12 +138,15 @@ void DeformationEnergy::useCustomDeformationEnergy(const Eigen::MatrixXf& Vx2VyC
 
     if (useAreaWeighting) {
         // Init curvature and area vectors
-        Eigen::VectorXf Aa(shapeA.getNumFaces());
-        Eigen::VectorXf Ab(shapeB.getNumFaces());
+        Eigen::VectorXf Aa(shapeA.getNumVertices());
+        Eigen::VectorXf Ab(shapeB.getNumVertices());
+        WKSEnergy wksEnergy = WKSEnergy();
+        wksEnergy.getA(shapeA, Aa);
+        wksEnergy.getA(shapeB, Ab);
 
         energy(Eigen::all, 0) = Aa(FaCombo(Eigen::all, 0)) + Ab(FbCombo(Eigen::all, 0));
-        energy(Eigen::all, 1) = energy(Eigen::all, 0);
-        energy(Eigen::all, 2) = energy(Eigen::all, 0);
+        energy(Eigen::all, 1) = Aa(FaCombo(Eigen::all, 1)) + Ab(FbCombo(Eigen::all, 1));
+        energy(Eigen::all, 2) = Aa(FaCombo(Eigen::all, 2)) + Ab(FbCombo(Eigen::all, 2));
     }
     else {
         energy.setOnes();
@@ -163,7 +166,8 @@ void DeformationEnergy::useCustomDeformationEnergy(const Eigen::MatrixXf& Vx2VyC
     }
 
     // update energy
-    defEnergy = energy.cwiseProduct(temp.square());
+    energy = energy.cwiseProduct(temp.square());
+    defEnergy = energy.matrix().rowwise().sum();
 }
 
 
