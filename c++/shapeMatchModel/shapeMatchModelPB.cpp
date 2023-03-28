@@ -31,6 +31,7 @@ PYBIND11_MODULE(shape_match_model_pb, handle) {
     smm.def("smmCreatedSuccessFully", &ShapeMatchModel::smmCreatedSuccessFully);
     smm.def("getFXCombo", &ShapeMatchModel::getFaCombo);
     smm.def("getFYCombo", &ShapeMatchModel::getFbCombo);
+    smm.def("saveSmmAsILP", &ShapeMatchModel::saveIlpAsLp);
 
 
     py::class_<LPMP::ILP_input>(handle, "ILP_instance")
