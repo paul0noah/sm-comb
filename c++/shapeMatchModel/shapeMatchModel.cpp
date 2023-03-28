@@ -328,7 +328,7 @@ LPMP::ILP_input ShapeMatchModel::getIlpObj() {
         */
         
         constraintGroup[0] = ilp.begin_new_inequality();
-        const std::string identifier = "R" + std::to_string(k) + ": ";
+        const std::string identifier = "R" + std::to_string(k);
         ilp.set_inequality_identifier(identifier);
         ilp.set_inequality_type(LPMP::ILP_input::inequality_type::equal);
         for (typename Eigen::SparseMatrix<int8_t, Eigen::RowMajor>::InnerIterator it(constrLHS,k); it; ++it) {
@@ -343,7 +343,7 @@ LPMP::ILP_input ShapeMatchModel::getIlpObj() {
         if (k < numRowsDel && opts.useConstraintsGroups) {
             // del plus
             constraintGroup[1] = ilp.begin_new_inequality();
-            const std::string identifierPlus = "R" + std::to_string(k) + "_plus" + ": ";
+            const std::string identifierPlus = "R" + std::to_string(k) + "_plus";
             ilp.set_inequality_identifier(identifierPlus);
             ilp.set_inequality_type(LPMP::ILP_input::inequality_type::smaller_equal);
             for (typename Eigen::SparseMatrix<int8_t, Eigen::RowMajor>::InnerIterator it(constrLHS,k); it; ++it) {
@@ -355,7 +355,7 @@ LPMP::ILP_input ShapeMatchModel::getIlpObj() {
             
             // del minus
             constraintGroup[2] = ilp.begin_new_inequality();
-            const std::string identifierMinus = "R" + std::to_string(k) + "_minus" + ": ";
+            const std::string identifierMinus = "R" + std::to_string(k) + "_minus";
             ilp.set_inequality_identifier(identifierMinus);
             ilp.set_inequality_type(LPMP::ILP_input::inequality_type::smaller_equal);
             for (typename Eigen::SparseMatrix<int8_t, Eigen::RowMajor>::InnerIterator it(constrLHS,k); it; ++it) {
