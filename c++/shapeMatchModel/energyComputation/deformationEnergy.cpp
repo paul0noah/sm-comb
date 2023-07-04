@@ -128,7 +128,7 @@ void DeformationEnergy::modifyEnergyVal(const int index, float newVal) {
 }
 
 
-void DeformationEnergy::useCustomDeformationEnergy(const Eigen::MatrixXf& Vx2VyCostMatrix, bool useAreaWeighting) {
+void DeformationEnergy::useCustomDeformationEnergy(const Eigen::MatrixXf& Vx2VyCostMatrix, bool useAreaWeighting, bool membraneReg, float lambda) {
     const bool useTranspose = Vx2VyCostMatrix.rows() != shapeA.getNumVertices();
 
     const Eigen::MatrixXi& FaCombo = combos.getFaCombo();
@@ -168,6 +168,62 @@ void DeformationEnergy::useCustomDeformationEnergy(const Eigen::MatrixXf& Vx2VyC
     // update energy
     energy = energy.cwiseProduct(temp.square());
     defEnergy = energy.matrix().rowwise().sum();
+
+
+    /*
+     Membrane Energy
+     */
+    if (membraneReg) {
+        const long numFacesA = shapeA.getNumFaces();
+        const long numFacesB = shapeB.getNumFaces();
+        const long numVerticesA = shapeA.getNumVertices();
+        const long numVerticesB = shapeB.getNumVertices();
+        const long numEdgesA = shapeA.getNumEdges();
+        const long numEdgesB = shapeB.getNumEdges();
+        const long numFacesAB = numFacesA * numFacesB;
+        const long numNonDegenerate = 3 * numFacesAB;
+        const long numDegenerateA = 3 * 2 * numEdgesA * numFacesB + numVerticesA * numFacesB;
+        const long numDegenerateB = 3 * 2 * numEdgesB * numFacesA + numVerticesB * numFacesA;
+        Eigen::MatrixXf memE(numNonDegenerate + numDegenerateA + numDegenerateB, 1);
+        #if defined(_OPENMP)
+        #pragma omp parallel
+        #pragma omp sections
+        #endif
+        {
+
+            // non-degenerate part of membrane energy
+            #if defined(_OPENMP)
+            #pragma omp section
+            #endif
+            memE.block(0, 0, numNonDegenerate, 1) =
+            membraneEnergy.get(shapeA, shapeB,
+                               FaCombo.block(0, 0, numNonDegenerate, 3),
+                               FbCombo.block(0, 0, numNonDegenerate, 3)) +
+            membraneEnergy.get(shapeB, shapeA,
+                               FbCombo.block(0, 0, numNonDegenerate, 3),
+                               FaCombo.block(0, 0, numNonDegenerate, 3));
+
+            // degenerate cases in A
+            #if defined(_OPENMP)
+            #pragma omp section
+            #endif
+            memE.block(numNonDegenerate, 0, numDegenerateA, 1) =
+            2 * membraneEnergy.get(shapeB, shapeA,
+                                   FbCombo.block(numNonDegenerate, 0, numDegenerateA, 3),
+                                   FaCombo.block(numNonDegenerate, 0, numDegenerateA, 3));
+
+            // degenerate cases in B
+            #if defined(_OPENMP)
+            #pragma omp section
+            #endif
+            memE.block(numNonDegenerate + numDegenerateA, 0, numDegenerateB, 1) =
+            2 * membraneEnergy.get(shapeA, shapeB,
+                                   FaCombo.block(numNonDegenerate + numDegenerateA, 0, numDegenerateB, 3),
+                                   FbCombo.block(numNonDegenerate + numDegenerateA, 0, numDegenerateB, 3));
+        }
+
+        defEnergy = lambda * defEnergy + memE;
+    }
 }
 
 
