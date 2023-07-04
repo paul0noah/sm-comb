@@ -155,13 +155,17 @@ void DeformationEnergy::useCustomDeformationEnergy(const Eigen::MatrixXf& Vx2VyC
 
     Eigen::ArrayXXf temp(FaCombo.rows(), 3);
     if (useTranspose) {
-        for (int i = 0; i < 3; i++) {
-            temp(Eigen::all, i) = Vx2VyCostMatrix(FaCombo(Eigen::all, i), FbCombo(Eigen::all, i));
+        for (int j = 0; j < FaCombo.rows(); j++) {
+            for (int i = 0; i < 3; i++) {
+                temp(Eigen::all, i) = Vx2VyCostMatrix(FaCombo(j, i), FbCombo(j, i));
+            }
         }
     }
     else {
-        for (int i = 0; i < 3; i++) {
-            temp(Eigen::all, i) = Vx2VyCostMatrix(FbCombo(Eigen::all, i), FaCombo(Eigen::all, i));
+        for (int j = 0; j < FaCombo.rows(); j++) {
+            for (int i = 0; i < 3; i++) {
+                temp(Eigen::all, i) = Vx2VyCostMatrix(FbCombo(j, i), FaCombo(j, i));
+            }
         }
     }
 
