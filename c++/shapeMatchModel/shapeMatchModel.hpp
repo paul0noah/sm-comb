@@ -113,7 +113,7 @@ public:
     MatrixInt8 readSolutionFromFile();
     void writeModelToFile();
     Eigen::MatrixXi getPointMatchesFromSolution(const SparseVecInt8 &Gamma);
-    void updateEnergy(const Eigen::MatrixXf& Vx2VyCost, bool weightWithAreas);
+    void updateEnergy(const Eigen::MatrixXf& Vx2VyCost, bool weightWithAreas, bool useMemReg, float lambda);
     float getFinalEnergy(const SparseVecInt8 &Gamma);
     float getLowerBound();
     bool smmCreatedSuccessFully();

@@ -292,8 +292,8 @@ void ShapeMatchModel::saveIlpAsLp(const std::string& filename) {
 /* function saveIlpAsLp
 
  */
-void ShapeMatchModel::updateEnergy(const Eigen::MatrixXf& Vx2VyCost, bool weightWithAreas) {
-    deformationEnergy.useCustomDeformationEnergy(Vx2VyCost, weightWithAreas);
+void ShapeMatchModel::updateEnergy(const Eigen::MatrixXf& Vx2VyCost, bool weightWithAreas, bool useMemReg, float lambda) {
+    deformationEnergy.useCustomDeformationEnergy(Vx2VyCost, weightWithAreas, useMemReg, lambda);
 }
 
 
