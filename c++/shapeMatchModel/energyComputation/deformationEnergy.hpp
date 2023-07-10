@@ -36,6 +36,7 @@ private:
 public:
     DeformationEnergy(Shape& sA, Shape& sB, Combinations& c);
     Eigen::MatrixXf get();
+    void constantPenaliseDegenerate(float addval);
     void modifyEnergyVal(const int index, float newVal);
     void useCustomDeformationEnergy(const Eigen::MatrixXf& Vx2VyCostMatrix, bool useAreaWeighting, bool membraneReg, float lambda);
 };

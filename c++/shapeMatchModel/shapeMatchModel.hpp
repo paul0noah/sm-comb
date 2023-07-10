@@ -119,6 +119,10 @@ public:
     bool smmCreatedSuccessFully();
     Eigen::MatrixXi& getFaCombo();
     Eigen::MatrixXi& getFbCombo();
+    void constantPenaliseDegenerate(float addval);
+    void setMaxNumDualSolverCalls(const int numcalls);
+    void setMaxNumBacktracks(const int maxbacktracks);
+    void setMaxPrimalHeuristicIters(const int maxiters);
 };
 
 #endif /* ShapeMatchModel_hpp */

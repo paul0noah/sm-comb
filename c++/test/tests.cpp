@@ -15,7 +15,7 @@
 #include "shapeMatchModel/energyComputation/deformationEnergy.hpp"
 #include "shapeMatchModel/constraintsComputation/constraints.hpp"
 #include "shapeMatchModel/shapeMatchModel.hpp"
-#include "test/exampleshapes.hpp";
+#include "test/exampleshapes.hpp"
 
 
 

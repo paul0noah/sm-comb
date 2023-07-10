@@ -24,7 +24,6 @@ pybind11_add_module(shape_match_model_pb shapeMatchModel/shapeMatchModelPB.cpp)
 find_package(Python3 REQUIRED)
 include_directories(${PYTHON_INCLUDE_DIRS})
 target_include_directories(${PROJECT_NAME} PUBLIC external/pybind11/include)
-message(ERROR ${PROJECT_NAME})
 
 # libigl
 option(LIBIGL_WITH_OPENGL            "Use OpenGL"         ON)

@@ -32,6 +32,10 @@ PYBIND11_MODULE(shape_match_model_pb, handle) {
     smm.def("getFXCombo", &ShapeMatchModel::getFaCombo);
     smm.def("getFYCombo", &ShapeMatchModel::getFbCombo);
     smm.def("saveSmmAsILP", &ShapeMatchModel::saveIlpAsLp);
+    smm.def("constantPenaliseDegenerate", &ShapeMatchModel::constantPenaliseDegenerate);
+    smm.def("setMaxNumDualSolverCalls", &ShapeMatchModel::setMaxNumDualSolverCalls);
+    smm.def("setMaxNumBacktracks", &ShapeMatchModel::setMaxNumBacktracks);
+    smm.def("setMaxPrimalHeuristicIters", &ShapeMatchModel::setMaxPrimalHeuristicIters);
 
 
     py::class_<LPMP::ILP_input>(handle, "ILP_instance")

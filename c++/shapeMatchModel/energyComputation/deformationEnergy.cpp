@@ -127,6 +127,26 @@ void DeformationEnergy::modifyEnergyVal(const int index, float newVal) {
     defEnergy(index) = newVal;
 }
 
+void DeformationEnergy::constantPenaliseDegenerate(float addval) {
+    const int numFacesA = shapeA.getNumFaces();
+    const int numFacesB = shapeB.getNumFaces();
+    const int numVerticesA = shapeA.getNumVertices();
+    const int numVerticesB = shapeB.getNumVertices();
+    const int numEdgesA = shapeA.getNumEdges();
+    const int numEdgesB = shapeB.getNumEdges();
+    const int numFacesAB = numFacesA * numFacesB;
+    const int numNonDegenerate = 3 * numFacesAB;
+    const int numDegenerateA = 3 * 2 * numEdgesA * numFacesB + numVerticesA * numFacesB;
+    const int numDegenerateB = 3 * 2 * numEdgesB * numFacesA + numVerticesB * numFacesA;
+
+    if (addval < 0) {
+        addval = defEnergy.mean();
+    }
+
+    // degenerate cases in A
+    defEnergy.block(numNonDegenerate, 0, numDegenerateA + numDegenerateB, 1) = defEnergy.block(numNonDegenerate, 0, numDegenerateA + numDegenerateB, 1).array() + addval;
+}
+
 
 void DeformationEnergy::useCustomDeformationEnergy(const Eigen::MatrixXf& Vx2VyCostMatrix, bool useAreaWeighting, bool membraneReg, float lambda) {
     const bool useTranspose = Vx2VyCostMatrix.rows() != shapeA.getNumVertices();

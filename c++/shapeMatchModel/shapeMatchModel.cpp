@@ -276,6 +276,19 @@ SparseVecInt8 ShapeMatchModel::getConstraintsVector() {
     return constr.getConstraintVector();
 }
 
+void ShapeMatchModel::setMaxNumDualSolverCalls(const int numcalls) {
+    opts.maxNumDualSolverCalls = numcalls;
+}
+
+void ShapeMatchModel::setMaxNumBacktracks(const int maxbacktracks) {
+    opts.primalHeuristicOpts.autoSetMaxBacktracks = false;
+    opts.primalHeuristicOpts.maxBacktracks = maxbacktracks;
+}
+
+void ShapeMatchModel::setMaxPrimalHeuristicIters(const int maxiters) {
+    opts.primalHeuristicOpts.maxIter = maxiters;
+}
+
 /* function saveIlpAsLp
  
  */
@@ -296,6 +309,10 @@ void ShapeMatchModel::updateEnergy(const Eigen::MatrixXf& Vx2VyCost, bool weight
     deformationEnergy.useCustomDeformationEnergy(Vx2VyCost, weightWithAreas, useMemReg, lambda);
 }
 
+
+void ShapeMatchModel::constantPenaliseDegenerate(float addval) {
+    deformationEnergy.constantPenaliseDegenerate(addval);
+}
 
 LPMP::ILP_input ShapeMatchModel::getIlpObj() {
     if (ilpGenerated) {
