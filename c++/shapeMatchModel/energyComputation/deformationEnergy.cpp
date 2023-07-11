@@ -140,7 +140,7 @@ void DeformationEnergy::constantPenaliseDegenerate(float addval) {
     const int numDegenerateB = 3 * 2 * numEdgesB * numFacesA + numVerticesB * numFacesA;
 
     if (addval < 0) {
-        addval = defEnergy.mean();
+        addval = -addval * defEnergy.mean();
     }
 
     // degenerate cases in A
