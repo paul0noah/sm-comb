@@ -250,6 +250,10 @@ void DeformationEnergy::useCustomDeformationEnergy(const Eigen::MatrixXf& Vx2VyC
     }
 }
 
+void DeformationEnergy::prune(Eigen::VectorX<bool>& pruneVec) {
+    defEnergy = defEnergy(pruneVec, Eigen::all);
+}
+
 
 /* REFERENCES:
  (1) WINDHEUSER, Thomas, et al. Large‐scale integer linear programming for

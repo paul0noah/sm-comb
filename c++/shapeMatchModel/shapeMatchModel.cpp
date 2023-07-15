@@ -44,6 +44,7 @@ bool ShapeMatchModel::checkWatertightness() {
 
 
 void ShapeMatchModel::generate() {
+    pruned = false;
     initialLowerBound = -1;
     generationSuccessfull = false;
     if (!checkWatertightness()) return;
@@ -499,6 +500,51 @@ Eigen::MatrixXf ShapeMatchModel::getMinMarginalsWithNonEmptyGamma(Eigen::SparseM
 }
  */
 
+void ShapeMatchModel::pruneWithCoarserMatching(Eigen::MatrixXi& coarsep2pmap, Eigen::MatrixXi& IXf2c, Eigen::MatrixXi& IYf2c) {
+    const Eigen::MatrixXi FXCombo = getCombinations().getFaCombo();
+    const Eigen::MatrixXi FYCombo = getCombinations().getFbCombo();
+
+
+    Eigen::MatrixX<bool> p2pmatrix(coarsep2pmap.col(0).maxCoeff(), coarsep2pmap.col(1).maxCoeff());
+    p2pmatrix.setZero();
+    // init p2p matrix
+    for (int i = 0; i < coarsep2pmap.rows(); i++) {
+        p2pmatrix(coarsep2pmap(i, 0), coarsep2pmap(i, 1)) = true;
+    }
+
+    Eigen::VectorX<bool> PruneVec(FXCombo.rows(), 1);
+    PruneVec.setZero();
+    for (int f = 0; f < FXCombo.rows(); f++) {
+        const bool firstp2p = p2pmatrix( IXf2c(FXCombo(f, 0)), IYf2c(FYCombo(f, 0)) );
+        const bool seconp2p = p2pmatrix( IXf2c(FXCombo(f, 1)), IYf2c(FYCombo(f, 1)) );
+        const bool thirdp2p = p2pmatrix( IXf2c(FXCombo(f, 2)), IYf2c(FYCombo(f, 2)) );
+        if (firstp2p && seconp2p && thirdp2p) {
+            PruneVec(f) = true;
+        }
+    }
+
+    if (opts.verbose) std::cout << "[ShapeMM] Pruning Shape Match Model..." << std::endl;
+    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+    if (opts.verbose) std::cout << "[ShapeMM]   > Product Space" << std::endl;
+    combos.prune(PruneVec);
+
+    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+    if (opts.verbose) std::cout << "[ShapeMM]   Done (" << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << "  [ms])" << std::endl;
+    if (opts.verbose) std::cout << "[ShapeMM]   > Constraints" << std::endl;
+    constr.prune(PruneVec);
+
+    std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
+    if (opts.verbose) std::cout << "[ShapeMM]   Done (" << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count() << "  [ms])" << std::endl;
+    if (opts.verbose) std::cout << "[ShapeMM]   > Energies" << std::endl;
+    deformationEnergy.prune(PruneVec);
+    
+    std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
+    if (opts.verbose) std::cout << "[ShapeMM]   Done (" << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count() << "  [ms])" << std::endl;
+    if (opts.verbose) std::cout << "[ShapeMM] Done (" << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t1).count() << "  [ms])" << std::endl;
+
+    pruned = true;
+}
+
 Eigen::MatrixXf ShapeMatchModel::getMinMarginals() {
     Eigen::SparseMatrix<int8_t> Gamma(combos.getFaCombo().rows(), 1);
     return getMinMarginals(Gamma, true);
@@ -642,6 +688,14 @@ float ShapeMatchModel::getLowerBound() {
 }
 
 MatrixInt8 ShapeMatchModel::solve() {
+
+    if (pruned) {
+        for (int i = 0; i < 10; i++) {
+            std::cout << "[ShapeMM] Warning" << std::endl;
+        }
+        std::cout << "[ShapeMM] The model was pruned with a previous solution." << std::endl;
+        std::cout << "[ShapeMM] The following code paths are not tested for pruned solutions => expect issues." << std::endl;
+    }
 
     bool gammaEmpty = true;
     MatrixInt8 Gamma(combos.getFaCombo().rows(), 1);

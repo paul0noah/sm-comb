@@ -272,3 +272,8 @@ Eigen::MatrixXi& Combinations::getFbCombo() {
     }
     return FbCombo;
 }
+
+void Combinations::prune(Eigen::VectorX<bool>& pruneVec) {
+    FaCombo = FaCombo(pruneVec, Eigen::all);
+    FbCombo = FbCombo(pruneVec, Eigen::all);
+}

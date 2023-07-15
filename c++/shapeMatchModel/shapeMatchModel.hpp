@@ -86,6 +86,7 @@ private:
     NonWatertightMeshHandler nonWatertightMeshHandler;
     float initialLowerBound;
     bool generationSuccessfull;
+    bool pruned;
     
 public:
     ShapeMatchModel(std::string modelname);
@@ -123,6 +124,7 @@ public:
     void setMaxNumDualSolverCalls(const int numcalls);
     void setMaxNumBacktracks(const int maxbacktracks);
     void setMaxPrimalHeuristicIters(const int maxiters);
+    void pruneWithCoarserMatching(Eigen::MatrixXi& coarsep2pmap, Eigen::MatrixXi& IXf2c, Eigen::MatrixXi& IYf2c);
 };
 
 #endif /* ShapeMatchModel_hpp */

@@ -86,6 +86,7 @@ public:
     Constraints(Shape &sX, Shape &sY, Combinations& c);
     SparseMatInt8 getConstraintMatrix();
     SparseVecInt8 getConstraintVector();
+    void prune(Eigen::VectorX<bool>& pruneVec);
     
 };
 #endif /* constraints_hpp */
