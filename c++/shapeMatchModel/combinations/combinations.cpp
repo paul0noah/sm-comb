@@ -274,6 +274,23 @@ Eigen::MatrixXi& Combinations::getFbCombo() {
 }
 
 void Combinations::prune(Eigen::VectorX<bool>& pruneVec) {
-    FaCombo = FaCombo(pruneVec, Eigen::all);
-    FbCombo = FbCombo(pruneVec, Eigen::all);
+    const long numElements = pruneVec.nonZeros();
+    Eigen::MatrixXi FaComboRed(numElements, 3);
+    Eigen::MatrixXi FbComboRed(numElements, 3);
+
+    long elementCounter = 0;
+    for (int i = 0; i < FaCombo.rows(); i++) {
+        if (pruneVec(i)) {
+            FaComboRed(elementCounter, Eigen::all) = FaCombo(i, Eigen::all);
+            FbComboRed(elementCounter, Eigen::all) = FbCombo(i, Eigen::all);
+            elementCounter++;
+            if (true) {
+                if (elementCounter >= numElements) {
+                    std::cout << "ERROR in Combinations::prune. Num Elements not correct" << std::endl;
+                }
+            }
+        }
+    }
+    FaCombo = FaComboRed;
+    FbCombo = FbComboRed;
 }

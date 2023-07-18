@@ -251,9 +251,23 @@ void DeformationEnergy::useCustomDeformationEnergy(const Eigen::MatrixXf& Vx2VyC
 }
 
 void DeformationEnergy::prune(Eigen::VectorX<bool>& pruneVec) {
+    const long numElements = pruneVec.nonZeros();
+    Eigen::MatrixXf defEnergyPruned(numElements, 1);
     defEnergy = defEnergy(pruneVec, Eigen::all);
+    long elementCounter = 0;
+    for (int i = 0; i < defEnergy.rows(); i++) {
+        if (pruneVec(i)) {
+            defEnergyPruned(elementCounter, 0) = defEnergy(i, 0);
+            elementCounter++;
+            if (true) {
+                if (elementCounter >= numElements) {
+                    std::cout << "ERROR in DeformationEnergy::prune. Num Elements not correct" << std::endl;
+                }
+            }
+        }
+    }
+    defEnergy = defEnergyPruned;
 }
-
 
 /* REFERENCES:
  (1) WINDHEUSER, Thomas, et al. Large‐scale integer linear programming for
