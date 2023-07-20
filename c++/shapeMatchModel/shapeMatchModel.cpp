@@ -15,6 +15,7 @@
 #include "helper/utils.hpp"
 #include <chrono>
 #include <filesystem>
+#include <algorithm>
 
 
 bool ShapeMatchModel::checkWatertightness() {
@@ -386,6 +387,18 @@ LPMP::ILP_input ShapeMatchModel::getIlpObj() {
             ilp.add_constraint_group(std::begin(constraintGroup), std::end(constraintGroup));
         }
     }
+
+    if (pruned) {
+        for (int i = 0; i < objective.rows(); i++) {
+            if (!pruneveci(i)){
+                const std::string identifier = "Prune" + std::to_string(i) + " ";
+                ilp.set_inequality_identifier(identifier);
+                ilp.set_inequality_type(LPMP::ILP_input::inequality_type::equal);
+                ilp.add_to_constraint(1, i);
+                ilp.set_right_hand_side(0);
+            }
+        }
+    }
     
     if (opts.useConstraintsGroups) {
         assert(ilp.nr_constraints() == (constrLHS.rows() + 2 * numRowsDel));
@@ -501,27 +514,95 @@ Eigen::MatrixXf ShapeMatchModel::getMinMarginalsWithNonEmptyGamma(Eigen::SparseM
  */
 
 void ShapeMatchModel::pruneWithCoarserMatching(Eigen::MatrixXi& coarsep2pmap, Eigen::MatrixXi& IXf2c, Eigen::MatrixXi& IYf2c) {
+
     const Eigen::MatrixXi FXCombo = getCombinations().getFaCombo();
     const Eigen::MatrixXi FYCombo = getCombinations().getFbCombo();
 
-
-    Eigen::MatrixX<bool> p2pmatrix(coarsep2pmap.col(0).maxCoeff(), coarsep2pmap.col(1).maxCoeff());
-    p2pmatrix.setZero();
-    // init p2p matrix
-    for (int i = 0; i < coarsep2pmap.rows(); i++) {
-        p2pmatrix(coarsep2pmap(i, 0), coarsep2pmap(i, 1)) = true;
+    Eigen::MatrixX<bool> p2pmatrix(std::max(coarsep2pmap.col(0).maxCoeff(), IXf2c.maxCoeff())+1,
+                                   std::max(coarsep2pmap.col(1).maxCoeff(), IYf2c.maxCoeff())+1);
+    for (int i = 0; i < p2pmatrix.rows(); i++) {
+        for (int j = 0; j < p2pmatrix.cols(); j++) {
+            p2pmatrix(i, j) = false;
+        }
     }
 
-    Eigen::VectorX<bool> PruneVec(FXCombo.rows(), 1);
-    PruneVec.setZero();
-    for (int f = 0; f < FXCombo.rows(); f++) {
+    p2pmatrix.setZero();
+    // init p2p matrix
+    std::cout << coarsep2pmap.cols() << std::endl;
+    for (int i = 0; i < coarsep2pmap.rows(); i++) {
+        if (coarsep2pmap(i, 0) >= p2pmatrix.rows() || coarsep2pmap(i, 0) < 0) {
+            std::cout << "coarsep2pmap(i, 0) " << coarsep2pmap(i, 0) << std::endl; continue;
+        }
+        if (coarsep2pmap(i, 1) >= p2pmatrix.cols() || coarsep2pmap(i, 1) < 0) {
+            std::cout << "coarsep2pmap(i, 1) " << coarsep2pmap(i, 1) << std::endl; continue;
+        }
+        p2pmatrix(coarsep2pmap(i, 0), coarsep2pmap(i, 1)) = 1;
+    }
+    Eigen::VectorX<bool> PruneVec(FXCombo.rows());
+    std::cout << PruneVec.rows() << " " << FXCombo.rows() << std::endl;
+    for (long f = 0; f < FXCombo.rows(); f++) {
+        if (FXCombo(f, 0) >= IXf2c.rows() || FXCombo(f, 0) < 0) {
+            std::cout << "FXCombo(f, 0) " << FXCombo(f, 0) << std::endl; continue;
+        }
+        if (FXCombo(f, 1) >= IXf2c.rows() || FXCombo(f, 1) < 0) {
+            std::cout << "FXCombo(f, 1) " << FXCombo(f, 1) << std::endl; continue;
+        }
+        if (FXCombo(f, 2) >= IXf2c.rows() || FXCombo(f, 2) < 0) {
+            std::cout << "FXCombo(f, 2) " << FXCombo(f, 2) << std::endl; continue;
+        }
+        if (FYCombo(f, 0) >= IYf2c.rows() || FYCombo(f, 0) < 0) {
+            std::cout << "FYCombo(f, 0) " << FYCombo(f, 0) << std::endl; continue;
+        }
+        if (FYCombo(f, 1) >= IYf2c.rows() || FYCombo(f, 1) < 0) {
+            std::cout << "FYCombo(f, 1) " << FYCombo(f, 1) << std::endl; continue;
+        }
+        if (FYCombo(f, 2) >= IYf2c.rows() || FYCombo(f, 2) < 0) {
+            std::cout << "FYCombo(f, 2) " << FYCombo(f, 2) << std::endl; continue;
+        }
+
+        if (IXf2c(FXCombo(f, 0)) >= p2pmatrix.rows() || IXf2c(FXCombo(f, 0) < 0)) {
+            std::cout << "IXf2c(FXCombo(f, 0) " << IXf2c(FXCombo(f, 0)) << std::endl; continue;
+        }
+        if (IXf2c(FXCombo(f, 1)) >= p2pmatrix.rows() || IXf2c(FXCombo(f, 1) < 0)) {
+            std::cout << "IXf2c(FXCombo(f, 1) " << IXf2c(FXCombo(f, 1)) << std::endl; continue;
+        }
+        if (IXf2c(FXCombo(f, 2)) >= p2pmatrix.rows() || IXf2c(FXCombo(f, 2) < 0)) {
+            std::cout << "IXf2c(FXCombo(f, 2) " << IXf2c(FXCombo(f, 2)) << std::endl; continue;
+        }
+
+        if (IYf2c(FYCombo(f, 0)) >= p2pmatrix.rows() || IYf2c(FYCombo(f, 0) < 0)) {
+            std::cout << "IYf2c(FYCombo(f, 0) " << IYf2c(FYCombo(f, 0)) << std::endl; continue;
+        }
+        if (IYf2c(FYCombo(f, 1)) >= p2pmatrix.rows() || IYf2c(FYCombo(f, 1) < 0)) {
+            std::cout << "IYf2c(FYCombo(f, 1) " << IYf2c(FYCombo(f, 1)) << std::endl; continue;
+        }
+        if (IYf2c(FYCombo(f, 2)) >= p2pmatrix.rows() || IYf2c(FYCombo(f, 2) < 0)) {
+            std::cout << "IYf2c(FYCombo(f, 2) " << IYf2c(FYCombo(f, 2)) << std::endl; continue;
+        }
         const bool firstp2p = p2pmatrix( IXf2c(FXCombo(f, 0)), IYf2c(FYCombo(f, 0)) );
         const bool seconp2p = p2pmatrix( IXf2c(FXCombo(f, 1)), IYf2c(FYCombo(f, 1)) );
         const bool thirdp2p = p2pmatrix( IXf2c(FXCombo(f, 2)), IYf2c(FYCombo(f, 2)) );
-        if (firstp2p && seconp2p && thirdp2p) {
+
+        const bool fourthp2p = p2pmatrix( IXf2c(FXCombo(f, 0)), IYf2c(FYCombo(f, 1)) );
+        const bool fithp2p = p2pmatrix( IXf2c(FXCombo(f, 1)), IYf2c(FYCombo(f, 2)) );
+        const bool sixthp2p = p2pmatrix( IXf2c(FXCombo(f, 2)), IYf2c(FYCombo(f, 0)) );
+
+        const bool seventhp2p = p2pmatrix( IXf2c(FXCombo(f, 0)), IYf2c(FYCombo(f, 2)) );
+        const bool eigthp2p = p2pmatrix( IXf2c(FXCombo(f, 1)), IYf2c(FYCombo(f, 0)) );
+        const bool ninethp2p = p2pmatrix( IXf2c(FXCombo(f, 2)), IYf2c(FYCombo(f, 1)) );
+        if (firstp2p || seconp2p || thirdp2p) { //|| fourthp2p || fithp2p || sixthp2p || seventhp2p || eigthp2p || ninethp2p ) {
             PruneVec(f) = true;
         }
+        else {
+            PruneVec(f) = false;
+        }
     }
+    pruneveci = PruneVec;
+    std::cout << "Pruning the model at ilp geneartion" << std::endl;
+    return;
+
+    std::cout << PruneVec(123) << std::endl;
+    //return;
 
     if (opts.verbose) std::cout << "[ShapeMM] Pruning Shape Match Model..." << std::endl;
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
@@ -542,6 +623,7 @@ void ShapeMatchModel::pruneWithCoarserMatching(Eigen::MatrixXi& coarsep2pmap, Ei
     if (opts.verbose) std::cout << "[ShapeMM]   Done (" << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count() << "  [ms])" << std::endl;
     if (opts.verbose) std::cout << "[ShapeMM] Done (" << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t1).count() << "  [ms])" << std::endl;
 
+    opts.useConstraintsGroups = false;
     pruned = true;
 }
 

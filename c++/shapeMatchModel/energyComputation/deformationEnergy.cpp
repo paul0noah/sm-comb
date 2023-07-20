@@ -150,6 +150,7 @@ void DeformationEnergy::constantPenaliseDegenerate(float addval) {
 
 void DeformationEnergy::useCustomDeformationEnergy(const Eigen::MatrixXf& Vx2VyCostMatrix, bool useAreaWeighting, bool membraneReg, float lambda) {
     const bool useTranspose = Vx2VyCostMatrix.rows() != shapeA.getNumVertices();
+    if (useTranspose) std::cout << "Using transpose" << std::endl;
 
     const Eigen::MatrixXi& FaCombo = combos.getFaCombo();
     const Eigen::MatrixXi& FbCombo = combos.getFbCombo();
@@ -193,6 +194,7 @@ void DeformationEnergy::useCustomDeformationEnergy(const Eigen::MatrixXf& Vx2VyC
     energy = energy.cwiseProduct(temp.square());
     defEnergy = energy.matrix().rowwise().sum();
 
+    std::cout << "Mean feat energy: " << defEnergy.array().mean() << std::endl;
 
     /*
      Membrane Energy
@@ -245,22 +247,21 @@ void DeformationEnergy::useCustomDeformationEnergy(const Eigen::MatrixXf& Vx2VyC
                                    FaCombo.block(numNonDegenerate + numDegenerateA, 0, numDegenerateB, 3),
                                    FbCombo.block(numNonDegenerate + numDegenerateA, 0, numDegenerateB, 3));
         }
-
+         std::cout << "Mean membrane energy: " << memE.array().mean() << std::endl;
         defEnergy = lambda * defEnergy + memE;
     }
 }
 
 void DeformationEnergy::prune(Eigen::VectorX<bool>& pruneVec) {
-    const long numElements = pruneVec.nonZeros();
+    const long numElements = pruneVec.cast<long>().sum();
     Eigen::MatrixXf defEnergyPruned(numElements, 1);
-    defEnergy = defEnergy(pruneVec, Eigen::all);
     long elementCounter = 0;
-    for (int i = 0; i < defEnergy.rows(); i++) {
+    for (long i = 0; i < defEnergy.rows(); i++) {
         if (pruneVec(i)) {
             defEnergyPruned(elementCounter, 0) = defEnergy(i, 0);
             elementCounter++;
             if (true) {
-                if (elementCounter >= numElements) {
+                if (elementCounter > numElements) {
                     std::cout << "ERROR in DeformationEnergy::prune. Num Elements not correct" << std::endl;
                 }
             }

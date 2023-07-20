@@ -11,6 +11,7 @@
 #include <chrono>
 #include <stdio.h>
 #include <igl/repmat.h>
+#include <igl/cumsum.h>
 
 // indexing helpers
 const EDGE idxEdge0((EDGE() << 0, 1).finished());
@@ -296,38 +297,73 @@ SparseVecInt8 Constraints::getConstraintVector() {
 
 
 void Constraints::prune(Eigen::VectorX<bool>& pruneVec) {
+    const long numElements = pruneVec.cast<long>().sum();
+    Eigen::VectorX<long> cumSumPruneVec;
+    igl::cumsum(pruneVec.cast<long>(), 1, cumSumPruneVec);
     std::vector<TripletInt8> constrEntries;
-    constrEntries.reserve(constraintMatrix.nonZeros() * 0.5);
-    constraintVector.reserve(numProjections);
+    constrEntries.reserve(constraintMatrix.nonZeros());
 
 
     unsigned long rowOffset = 0;
     unsigned long maxColIdx = 0;
-    for (int e = 0; e < constraintMatrix.outerSize(); ++e) {
+    unsigned long minColIdx = 10000000;
+    for (long e = 0; e < constraintMatrix.outerSize(); ++e) {
         unsigned int numNonZerosRow = 0;
+        int8_t prevVal = 0;
+        bool signflip = false;
         for (typename Eigen::SparseMatrix<int8_t, Eigen::RowMajor>::InnerIterator it(constraintMatrix, e); it; ++it) {
             const int f = it.index();
             const int8_t val = it.value();
             if (pruneVec(f)) {
-                numNonZerosRow++;
-                constrEntries.push_back(TripletInt8(e - rowOffset, f, val));
-                if (f > maxColIdx) {
-                    maxColIdx = f;
+                if (prevVal == 0) {
+                    prevVal = val;
+                }
+                if (prevVal != val) {
+                    signflip = true;
                 }
             }
         }
-        if (!numNonZerosRow) {
+        if (signflip || e >= numProductEdges) { // make sure trivial constraints are pruned away
+            for (typename Eigen::SparseMatrix<int8_t, Eigen::RowMajor>::InnerIterator it(constraintMatrix, e); it; ++it) {
+                const int f = it.index();
+                const int8_t val = it.value();
+                if (pruneVec(f)) {
+                    numNonZerosRow++;
+                    const int colidx = cumSumPruneVec(f) - 1;
+                    constrEntries.push_back(TripletInt8(e - rowOffset, colidx, val));
+                    if (colidx > maxColIdx) {
+                        maxColIdx = colidx;
+                    }
+                    if (colidx < minColIdx) {
+                        minColIdx = colidx;
+                    }
+                }
+            }
+        }
+        if (numNonZerosRow == 0) {
             rowOffset++;
         }
     }
-
-    numProductFaces = maxColIdx;
-    constraintMatrix = SparseMatInt8(numProductEdges - rowOffset + numProjections, numProductFaces);
+    std::cout << minColIdx << "    " << maxColIdx << std::endl;
+    std::cout << constraintMatrix.outerSize() - rowOffset << " " << numProductFaces - maxColIdx << std::endl;
+    //numProductFaces = maxColIdx;
+    constraintMatrix = SparseMatInt8(numProductEdges - rowOffset + numProjections, numElements);
     constraintMatrix.setFromTriplets(constrEntries.begin(), constrEntries.end());
 
+    for (long e = 0; e < constraintMatrix.outerSize(); ++e) {
+        unsigned int numNonZerosRow = 0;
+        for (typename Eigen::SparseMatrix<int8_t, Eigen::RowMajor>::InnerIterator it(constraintMatrix, e); it; ++it) {
+                numNonZerosRow++;
+        }
+        if (!numNonZerosRow) {
+            std::cout << "Row " << e << " of " << constraintMatrix.outerSize() << std::endl;
+        }
+    }
+
     constraintVector = SparseVecInt8(numProductEdges - rowOffset + numProjections);
+    constraintVector.reserve(numProjections);
     for (int k = numProductEdges - rowOffset; k < numProductEdges - rowOffset + numProjections; k++) {
         constraintVector.insert(k) = 1;
     }
-
+    std::cout << constraintVector.cast<int>().sum() << std::endl;
 }

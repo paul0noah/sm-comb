@@ -87,6 +87,7 @@ private:
     float initialLowerBound;
     bool generationSuccessfull;
     bool pruned;
+    Eigen::VectorX<bool> pruneveci;
     
 public:
     ShapeMatchModel(std::string modelname);
