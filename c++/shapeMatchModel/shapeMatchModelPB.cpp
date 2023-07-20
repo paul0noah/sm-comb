@@ -38,9 +38,9 @@ PYBIND11_MODULE(shape_match_model_pb, handle) {
     smm.def("setMaxPrimalHeuristicIters", &ShapeMatchModel::setMaxPrimalHeuristicIters);
     smm.def("pruneWithCoarserMatching", &ShapeMatchModel::pruneWithCoarserMatching);
     smm.def("writeModelForMatlab", &ShapeMatchModel::writeModelForMatlab);
+    smm.def("saveAsLPFile", &ShapeMatchModel::saveIlpAsLp);
 
 
     py::class_<LPMP::ILP_input>(handle, "ILP_instance")
         .def(py::init<>());
 }
-
