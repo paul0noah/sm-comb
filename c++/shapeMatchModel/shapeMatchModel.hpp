@@ -126,6 +126,7 @@ public:
     void setMaxNumBacktracks(const int maxbacktracks);
     void setMaxPrimalHeuristicIters(const int maxiters);
     void pruneWithCoarserMatching(Eigen::MatrixXi& coarsep2pmap, Eigen::MatrixXi& IXf2c, Eigen::MatrixXi& IYf2c);
+    void writeModelForMatlab(std::string filename);
 };
 
 #endif /* ShapeMatchModel_hpp */

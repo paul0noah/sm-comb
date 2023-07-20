@@ -696,6 +696,35 @@ void ShapeMatchModel::writeSolutionToFile(MatrixInt8 &Gamma) {
     writeModelToFile();
 }
 
+void ShapeMatchModel::writeModelForMatlab(std::string filename) {
+    utils::writeMatrixToFile(getDeformationEnergy(), filename + "_Energy");
+
+    const SparseMatInt8 constrLHS = getConstraintsMatrix();
+    SparseVecInt8 constrRHS = getConstraintsVector();
+    const int nnz = constrLHS.nonZeros();
+    Eigen::MatrixXi I(nnz, 1);
+    Eigen::MatrixXi J(nnz, 1);
+    Eigen::MatrixX<int8_t> V(nnz, 1);
+
+    long c = 0;
+    for (int k = 0; k < constrLHS.outerSize(); ++k) {
+        for (typename Eigen::SparseMatrix<int8_t, Eigen::RowMajor>::InnerIterator it(constrLHS, k); it; ++it) {
+            I(c) = k;
+            J(c) = it.index();
+            V(c) = it.value();
+            c++;
+        }
+    }
+
+    utils::writeMatrixToFile(I, filename + "_I");
+    utils::writeMatrixToFile(J, filename + "_J");
+    utils::writeMatrixToFile(V, filename + "_V");
+
+    Eigen::MatrixXi dimension(1, 1);
+    dimension << constrRHS.nonZeros();
+    utils::writeMatrixToFile(dimension, filename + "_b");
+}
+
 void ShapeMatchModel::writeModelToFile() {
     std::filesystem::create_directories(opts.modelName);
     std::cout << "[ShapeMM] Writing Model to file..." << std::endl;
