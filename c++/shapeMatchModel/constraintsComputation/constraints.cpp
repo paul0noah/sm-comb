@@ -344,9 +344,7 @@ void Constraints::prune(Eigen::VectorX<bool>& pruneVec) {
             rowOffset++;
         }
     }
-    std::cout << minColIdx << "    " << maxColIdx << std::endl;
-    std::cout << constraintMatrix.outerSize() - rowOffset << " " << numProductFaces - maxColIdx << std::endl;
-    //numProductFaces = maxColIdx;
+
     constraintMatrix = SparseMatInt8(numProductEdges - rowOffset + numProjections, numElements);
     constraintMatrix.setFromTriplets(constrEntries.begin(), constrEntries.end());
 
@@ -355,9 +353,9 @@ void Constraints::prune(Eigen::VectorX<bool>& pruneVec) {
         for (typename Eigen::SparseMatrix<int8_t, Eigen::RowMajor>::InnerIterator it(constraintMatrix, e); it; ++it) {
                 numNonZerosRow++;
         }
-        if (!numNonZerosRow) {
+        /*if (!numNonZerosRow) {
             std::cout << "Row " << e << " of " << constraintMatrix.outerSize() << std::endl;
-        }
+        }*/
     }
 
     constraintVector = SparseVecInt8(numProductEdges - rowOffset + numProjections);
@@ -365,5 +363,4 @@ void Constraints::prune(Eigen::VectorX<bool>& pruneVec) {
     for (int k = numProductEdges - rowOffset; k < numProductEdges - rowOffset + numProjections; k++) {
         constraintVector.insert(k) = 1;
     }
-    std::cout << constraintVector.cast<int>().sum() << std::endl;
 }

@@ -286,11 +286,11 @@ void Combinations::prune(Eigen::VectorX<bool>& pruneVec) {
             FaComboRed(elementCounter, Eigen::all) = FaCombo(i, Eigen::all);
             FbComboRed(elementCounter, Eigen::all) = FbCombo(i, Eigen::all);
             elementCounter++;
-            if (true) {
+            /*if (true) {
                 if (elementCounter > numElements) {
                     std::cout << "ERROR in Combinations::prune. Num Elements not correct" << std::endl;
                 }
-            }
+            }*/
         }
     }
 
