@@ -39,7 +39,7 @@ public:
     void constantPenaliseDegenerate(float addval);
     void modifyEnergyVal(const int index, float newVal);
     void useCustomDeformationEnergy(const Eigen::MatrixXf& Vx2VyCostMatrix, bool useAreaWeighting, bool membraneReg, float lambda);
-    void prune(Eigen::VectorX<bool>& pruneVec);
+    void prune(const Eigen::VectorX<bool>& pruneVec);
 };
 
 #endif /* deformationEnergy_hpp */

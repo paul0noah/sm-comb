@@ -252,7 +252,7 @@ void DeformationEnergy::useCustomDeformationEnergy(const Eigen::MatrixXf& Vx2VyC
     }
 }
 
-void DeformationEnergy::prune(Eigen::VectorX<bool>& pruneVec) {
+void DeformationEnergy::prune(const Eigen::VectorX<bool>& pruneVec) {
     const long numElements = pruneVec.cast<long>().sum();
     Eigen::MatrixXf defEnergyPruned(numElements, 1);
     long elementCounter = 0;

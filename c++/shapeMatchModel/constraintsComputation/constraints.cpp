@@ -248,6 +248,111 @@ void Constraints::computeConstraints() {
     computeConstraintVector();
 }
 
+Eigen::MatrixXi pruneEdgeProductSpace(Eigen::MatrixXi& E,  const Eigen::MatrixXi& coarsep2pmap, const Eigen::MatrixXi& IXf2c, const Eigen::MatrixXi& IYf2c) {
+    Eigen::MatrixX<bool> p2pmatrix(std::max(coarsep2pmap.col(0).maxCoeff(), IXf2c.maxCoeff())+1,
+                                   std::max(coarsep2pmap.col(1).maxCoeff(), IYf2c.maxCoeff())+1);
+    for (int i = 0; i < p2pmatrix.rows(); i++) {
+        for (int j = 0; j < p2pmatrix.cols(); j++) {
+            p2pmatrix(i, j) = false;
+        }
+    }
+    p2pmatrix.setZero();
+    // init p2p matrix
+    for (int i = 0; i < coarsep2pmap.rows(); i++) {
+        p2pmatrix(coarsep2pmap(i, 0), coarsep2pmap(i, 1)) = 1;
+    }
+
+    Eigen::MatrixXi prunedE(E.rows(), 4);
+    long numE = 0;
+    for (long e = 0; e < E.rows(); e++) {
+        const bool firstp2p = p2pmatrix( IXf2c(E(e, 0)), IYf2c(E(e, 0)) );
+        const bool seconp2p = p2pmatrix( IXf2c(E(e, 1)), IYf2c(E(e, 1)) );
+        if (firstp2p || seconp2p) {
+            prunedE(numE, Eigen::all) = E(e, Eigen::all);
+            numE++;
+        }
+    }
+    prunedE.conservativeResize(numE, 2);
+    return prunedE;
+}
+
+void Constraints::computePrunedConstraints(const Eigen::VectorX<bool>& pruneVec, const Eigen::MatrixXi& coarsep2pmap, const Eigen::MatrixXi& IXf2c, const Eigen::MatrixXi& IYf2c) {
+    numProductFaces = FXCombo.rows();
+
+
+    /*
+     TODO:
+     compute projection and do the prune on the projection :)
+     */
+    std::vector<TripletInt8> constrEntries;
+    constrEntries.reserve(numProductFaces * 3 + numProductFaces * 2);
+
+
+    // del
+    int rowsE;
+    Eigen::MatrixXi E;
+    E = constructEdgeProductSpace(rowsE);
+    E = pruneEdgeProductSpace(E, coarsep2pmap, IXf2c, IYf2c);
+    numProductEdges = E.rows();
+
+    // intermediate variables
+    EDGE edgeX0, edgeX1, edgeX2, edgeY0, edgeY1, edgeY2;
+
+    uint8_t numAdded;
+    // assumes that FXCombo was pruned before :)
+    for (int f = 0; f < FXCombo.rows(); f++) {
+
+        // extract product edges from the product triangles
+        edgeX0 = FXCombo(f, idxEdge0);
+        edgeX1 = FXCombo(f, idxEdge1);
+        edgeX2 = FXCombo(f, idxEdge2);
+        edgeY0 = FYCombo(f, idxEdge0);
+        edgeY1 = FYCombo(f, idxEdge1);
+        edgeY2 = FYCombo(f, idxEdge2);
+
+        numAdded = 0;
+        for ( int e = 0; e < E.rows(); e++) {
+
+            checkAndAddToDel(constrEntries, E, edgeX0, edgeY0, e, f, numAdded);
+            checkAndAddToDel(constrEntries, E, edgeX1, edgeY1, e, f, numAdded);
+            checkAndAddToDel(constrEntries, E, edgeX2, edgeY2, e, f, numAdded);
+
+            // there are only three entries per column
+            if (numAdded >= 3) {
+                break;
+            }
+        }
+    }
+
+    // projection
+    SparseMatInt8 proj = getProjection();
+    Eigen::VectorX<long> cumSumPruneVec;
+    igl::cumsum(pruneVec.cast<long>(), 1, cumSumPruneVec);
+    for (long e = 0; e < proj.outerSize(); ++e) {
+        for (typename Eigen::SparseMatrix<int8_t, Eigen::RowMajor>::InnerIterator it(proj, e); it; ++it) {
+            const int f = it.index();
+            const int8_t val = it.value();
+            if (pruneVec(f)) {
+                const int colidx = cumSumPruneVec(f) - 1;
+                constrEntries.push_back(TripletInt8(e + E.rows(), colidx, val));
+            }
+        }
+    }
+
+
+    // create the matrix
+    constraintMatrix = SparseMatInt8(E.rows() + numProjections, numProductFaces);
+    constraintMatrix.setFromTriplets(constrEntries.begin(), constrEntries.end());
+
+
+    // Constraints vector
+    constraintVector = SparseVecInt8(E.rows() + numProjections);
+    constraintVector.reserve(numProjections);
+    for (int k = E.rows(); k < E.rows() + numProjections; k++) {
+        constraintVector.insert(k) = 1;
+    }
+}
+
 void Constraints::init() {
     numFacesX = shapeX.getNumFaces();
     numFacesY = shapeY.getNumFaces();
@@ -296,12 +401,12 @@ SparseVecInt8 Constraints::getConstraintVector() {
 }
 
 
-void Constraints::prune(Eigen::VectorX<bool>& pruneVec) {
+void Constraints::prune(const Eigen::VectorX<bool>& pruneVec) {
     const long numElements = pruneVec.cast<long>().sum();
     Eigen::VectorX<long> cumSumPruneVec;
     igl::cumsum(pruneVec.cast<long>(), 1, cumSumPruneVec);
     std::vector<TripletInt8> constrEntries;
-    constrEntries.reserve(constraintMatrix.nonZeros());
+    constrEntries.reserve(constraintMatrix.nonZeros() * 0.25);
 
 
     unsigned long rowOffset = 0;
@@ -348,15 +453,15 @@ void Constraints::prune(Eigen::VectorX<bool>& pruneVec) {
     constraintMatrix = SparseMatInt8(numProductEdges - rowOffset + numProjections, numElements);
     constraintMatrix.setFromTriplets(constrEntries.begin(), constrEntries.end());
 
-    for (long e = 0; e < constraintMatrix.outerSize(); ++e) {
+    /*for (long e = 0; e < constraintMatrix.outerSize(); ++e) {
         unsigned int numNonZerosRow = 0;
         for (typename Eigen::SparseMatrix<int8_t, Eigen::RowMajor>::InnerIterator it(constraintMatrix, e); it; ++it) {
                 numNonZerosRow++;
         }
-        /*if (!numNonZerosRow) {
+        if (!numNonZerosRow) {
             std::cout << "Row " << e << " of " << constraintMatrix.outerSize() << std::endl;
-        }*/
-    }
+        }
+    }*/
 
     constraintVector = SparseVecInt8(numProductEdges - rowOffset + numProjections);
     constraintVector.reserve(numProjections);

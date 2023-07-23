@@ -88,6 +88,7 @@ private:
     bool generationSuccessfull;
     bool pruned;
     Eigen::VectorX<bool> pruneveci;
+    Eigen::VectorX<bool> getPruneVec(Eigen::MatrixXi& coarsep2pmap, Eigen::MatrixXi& IXf2c, Eigen::MatrixXi& IYf2c);
     
 public:
     ShapeMatchModel(std::string modelname);
@@ -95,6 +96,7 @@ public:
     ShapeMatchModel(Shape &sX, Shape & sY);
     ShapeMatchModel(Shape &sX, Shape & sY, ShapeMatchModelOpts optsIn);
     ShapeMatchModel(Eigen::MatrixXi FX, Eigen::MatrixXf VX, Eigen::MatrixXi FY, Eigen::MatrixXf VY);
+    ShapeMatchModel(Eigen::MatrixXi FX, Eigen::MatrixXf VX, Eigen::MatrixXi FY, Eigen::MatrixXf VY, Eigen::MatrixXi& coarsep2pmap, Eigen::MatrixXi& IXf2c, Eigen::MatrixXi& IYf2c);
     ShapeMatchModel(std::string filenameShapeX, std::string filenameShapeY);
     ShapeMatchModel(std::string filenameShapeX, int numFacesX, std::string filenameShapeY, int numFacesY);
     ShapeMatchModel(std::string filenameShapeX, std::string filenameShapeY, ShapeMatchModelOpts opts);

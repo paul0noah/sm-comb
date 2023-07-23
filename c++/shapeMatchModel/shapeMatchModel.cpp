@@ -120,6 +120,48 @@ ShapeMatchModel::ShapeMatchModel(Shape &sX, Shape & sY, ShapeMatchModelOpts opts
         opts = optsIn;
 }
 
+ShapeMatchModel::ShapeMatchModel(Eigen::MatrixXi FX, Eigen::MatrixXf VX, Eigen::MatrixXi FY, Eigen::MatrixXf VY, Eigen::MatrixXi& coarsep2pmap, Eigen::MatrixXi& IXf2c, Eigen::MatrixXi& IYf2c) :
+shapeX(Shape(VX, FX)),
+shapeY(Shape(VY, FY)),
+combos(shapeX, shapeY),
+constr(shapeX, shapeY, combos),
+deformationEnergy(shapeX, shapeY, combos),
+ilpGenerated(false),
+minMarginals(combos.getFaCombo().rows(), 1),
+minMarginalsComputed(false),
+bddsolver(NULL) {
+
+    ilp = LPMP::ILP_input();
+    pruned = true;
+    initialLowerBound = -1;
+    generationSuccessfull = false;
+    if (!checkWatertightness()) return;
+    if (opts.verbose) std::cout << "[ShapeMM] Generating Shape Match Model..." << std::endl;
+    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+    if (opts.verbose) std::cout << "[ShapeMM]   > Product Space" << std::endl;
+    combos.getFaCombo();
+
+    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+    if (opts.verbose) std::cout << "[ShapeMM]   Done (" << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << "  [ms])" << std::endl;
+
+    const Eigen::VectorX<bool> PruneVec = getPruneVec(coarsep2pmap, IXf2c, IYf2c);
+
+    if (opts.verbose) std::cout << "[ShapeMM]   > Energies" << std::endl;
+    deformationEnergy.get();
+    deformationEnergy.prune(PruneVec);
+    std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
+    if (opts.verbose) std::cout << "[ShapeMM]   Done (" << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count() << "  [ms])" << std::endl;
+
+    if (opts.verbose) std::cout << "[ShapeMM]   > Constraints" << std::endl;
+    constr.getConstraintMatrix();
+
+    std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
+    if (opts.verbose) std::cout << "[ShapeMM]   Done (" << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count() << "  [ms])" << std::endl;
+    if (opts.verbose) std::cout << "[ShapeMM] Done (" << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t1).count() << "  [ms])" << std::endl;
+    generationSuccessfull = true;
+
+}
+
 ShapeMatchModel::ShapeMatchModel(Eigen::MatrixXi FX, Eigen::MatrixXf VX, Eigen::MatrixXi FY, Eigen::MatrixXf VY):
     shapeX(Shape(VX, FX)),
     shapeY(Shape(VY, FY)),
@@ -513,8 +555,7 @@ Eigen::MatrixXf ShapeMatchModel::getMinMarginalsWithNonEmptyGamma(Eigen::SparseM
 }
  */
 
-void ShapeMatchModel::pruneWithCoarserMatching(Eigen::MatrixXi& coarsep2pmap, Eigen::MatrixXi& IXf2c, Eigen::MatrixXi& IYf2c) {
-
+Eigen::VectorX<bool> ShapeMatchModel::getPruneVec(Eigen::MatrixXi& coarsep2pmap, Eigen::MatrixXi& IXf2c, Eigen::MatrixXi& IYf2c) {
     const Eigen::MatrixXi FXCombo = getCombinations().getFaCombo();
     const Eigen::MatrixXi FYCombo = getCombinations().getFbCombo();
 
@@ -543,6 +584,11 @@ void ShapeMatchModel::pruneWithCoarserMatching(Eigen::MatrixXi& coarsep2pmap, Ei
             PruneVec(f) = false;
         }
     }
+    return PruneVec;
+}
+
+void ShapeMatchModel::pruneWithCoarserMatching(Eigen::MatrixXi& coarsep2pmap, Eigen::MatrixXi& IXf2c, Eigen::MatrixXi& IYf2c) {
+    const Eigen::VectorX<bool> PruneVec = getPruneVec(coarsep2pmap, IXf2c, IYf2c);
 
     if (opts.verbose) std::cout << "[ShapeMM] Pruning Shape Match Model..." << std::endl;
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();

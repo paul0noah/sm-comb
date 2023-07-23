@@ -86,7 +86,8 @@ public:
     Constraints(Shape &sX, Shape &sY, Combinations& c);
     SparseMatInt8 getConstraintMatrix();
     SparseVecInt8 getConstraintVector();
-    void prune(Eigen::VectorX<bool>& pruneVec);
+    void prune(const Eigen::VectorX<bool>& pruneVec);
+    void computePrunedConstraints(const Eigen::VectorX<bool>& pruneVec, const Eigen::MatrixXi& coarsep2pmap, const Eigen::MatrixXi& IXf2c, const Eigen::MatrixXi& IYf2c);
     
 };
 #endif /* constraints_hpp */

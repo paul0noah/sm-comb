@@ -273,7 +273,7 @@ Eigen::MatrixXi& Combinations::getFbCombo() {
     return FbCombo;
 }
 
-void Combinations::prune(Eigen::VectorX<bool>& pruneVec) {
+void Combinations::prune(const Eigen::VectorX<bool>& pruneVec) {
     const long numElements = pruneVec.cast<long>().sum();
     Eigen::MatrixXi FaComboRed(numElements, 3);
     FaComboRed = -FaComboRed.setOnes();

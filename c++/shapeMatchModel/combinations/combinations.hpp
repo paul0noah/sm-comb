@@ -31,7 +31,7 @@ public:
     Combinations(Shape& sA, Shape& sB);
     
     void computeCombinations();
-    void prune(Eigen::VectorX<bool>& pruneVec);
+    void prune(const Eigen::VectorX<bool>& pruneVec);
     Eigen::MatrixXi& getFaCombo();
     Eigen::MatrixXi& getFbCombo();
 };
