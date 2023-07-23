@@ -120,7 +120,7 @@ ShapeMatchModel::ShapeMatchModel(Shape &sX, Shape & sY, ShapeMatchModelOpts opts
         opts = optsIn;
 }
 
-ShapeMatchModel::ShapeMatchModel(Eigen::MatrixXi FX, Eigen::MatrixXf VX, Eigen::MatrixXi FY, Eigen::MatrixXf VY, Eigen::MatrixXi& coarsep2pmap, Eigen::MatrixXi& IXf2c, Eigen::MatrixXi& IYf2c) :
+ShapeMatchModel::ShapeMatchModel(Eigen::MatrixXi FX, Eigen::MatrixXf VX, Eigen::MatrixXi FY, Eigen::MatrixXf VY, Eigen::MatrixXi coarsep2pmap, Eigen::MatrixXi IXf2c, Eigen::MatrixXi IYf2c) :
 shapeX(Shape(VX, FX)),
 shapeY(Shape(VY, FY)),
 combos(shapeX, shapeY),
