@@ -136,24 +136,26 @@ bddsolver(NULL) {
     initialLowerBound = -1;
     generationSuccessfull = false;
     if (!checkWatertightness()) return;
-    if (opts.verbose) std::cout << "[ShapeMM] Generating Shape Match Model..." << std::endl;
+    if (opts.verbose) std::cout << "[ShapeMM] Generating Shape Match Model Pruned..." << std::endl;
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     if (opts.verbose) std::cout << "[ShapeMM]   > Product Space" << std::endl;
     combos.getFaCombo();
+    const Eigen::VectorX<bool> PruneVec = getPruneVec(coarsep2pmap, IXf2c, IYf2c);
+
 
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     if (opts.verbose) std::cout << "[ShapeMM]   Done (" << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << "  [ms])" << std::endl;
 
-    const Eigen::VectorX<bool> PruneVec = getPruneVec(coarsep2pmap, IXf2c, IYf2c);
-
     if (opts.verbose) std::cout << "[ShapeMM]   > Energies" << std::endl;
     deformationEnergy.get();
+    std::cout << "pruning" << std::endl;
     deformationEnergy.prune(PruneVec);
+    combos.prune(PruneVec);
     std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
     if (opts.verbose) std::cout << "[ShapeMM]   Done (" << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count() << "  [ms])" << std::endl;
 
     if (opts.verbose) std::cout << "[ShapeMM]   > Constraints" << std::endl;
-    constr.getConstraintMatrix();
+    constr.computePrunedConstraints(PruneVec, coarsep2pmap, IXf2c, IYf2c);
 
     std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
     if (opts.verbose) std::cout << "[ShapeMM]   Done (" << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count() << "  [ms])" << std::endl;
@@ -372,7 +374,7 @@ LPMP::ILP_input ShapeMatchModel::getIlpObj() {
     // Add variables to ilp
     for (int i = 0; i < objective.rows(); i++) {
         std::string varName = getVariableName(i, FaCombo, FbCombo);
-        ilp.add_new_variable(varName);
+        ilp.add_new_variable(std::to_string(i));
         ilp.add_to_objective((double) objective(i), i);
     }
     assert(ilp.nr_variables() == constrLHS.cols());

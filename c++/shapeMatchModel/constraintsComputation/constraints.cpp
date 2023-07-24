@@ -351,6 +351,8 @@ void Constraints::computePrunedConstraints(const Eigen::VectorX<bool>& pruneVec,
     for (int k = E.rows(); k < E.rows() + numProjections; k++) {
         constraintVector.insert(k) = 1;
     }
+
+    computed = true;
 }
 
 void Constraints::init() {
