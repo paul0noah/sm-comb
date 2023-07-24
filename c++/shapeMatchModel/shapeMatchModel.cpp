@@ -148,7 +148,6 @@ bddsolver(NULL) {
 
     if (opts.verbose) std::cout << "[ShapeMM]   > Energies" << std::endl;
     deformationEnergy.get();
-    std::cout << "pruning" << std::endl;
     deformationEnergy.prune(PruneVec);
     combos.prune(PruneVec);
     std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
