@@ -149,6 +149,7 @@ void DeformationEnergy::constantPenaliseDegenerate(float addval) {
 
 
 void DeformationEnergy::useCustomDeformationEnergy(const Eigen::MatrixXf& Vx2VyCostMatrix, bool useAreaWeighting, bool membraneReg, float lambda) {
+    computed = true;
     const bool useTranspose = Vx2VyCostMatrix.rows() != shapeA.getNumVertices();
     if (useTranspose) std::cout << "Using transpose" << std::endl;
 

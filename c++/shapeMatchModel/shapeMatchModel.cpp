@@ -147,8 +147,8 @@ bddsolver(NULL) {
     if (opts.verbose) std::cout << "[ShapeMM]   Done (" << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << "  [ms])" << std::endl;
 
     if (opts.verbose) std::cout << "[ShapeMM]   > Energies" << std::endl;
-    deformationEnergy.get();
-    deformationEnergy.prune(PruneVec);
+    //deformationEnergy.get();
+    //deformationEnergy.prune(PruneVec);
     if (opts.verbose) std::cout << "[ShapeMM]     => skipping (contact project owner if you need this)" << std::endl;
     combos.prune(PruneVec);
     std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
@@ -385,7 +385,7 @@ LPMP::ILP_input ShapeMatchModel::getIlpObj() {
     int constraintGroup[] = {0, 0, 0};
     // Add constraints to ilp
     for (int k = 0; k < constrLHS.outerSize(); ++k) {
-        /*if (k < numRowsDel) {
+        if (k < numRowsDel) {
             unsigned int numNonZerosRow = 0;
             int8_t prevVal = 0;
             bool signflip = false;
@@ -401,7 +401,7 @@ LPMP::ILP_input ShapeMatchModel::getIlpObj() {
             }
             if (!signflip)
                 continue; // make sure we do not add trivial constraints
-        }*/
+        }
 
         /*
             beginNewInequality   => creates new constraint
