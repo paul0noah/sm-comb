@@ -288,6 +288,7 @@ void Constraints::computePrunedConstraints(const Eigen::VectorX<bool>& pruneVec,
         constraintVector.insert(k) = 1;
     }
 
+    prune(pruneVec);
     computed = true;
 }
 

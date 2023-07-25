@@ -22,7 +22,7 @@
 const EDGE idxEdge0((EDGE() << 0, 1).finished());
 const EDGE idxEdge1((EDGE() << 1, 2).finished());
 const EDGE idxEdge2((EDGE() << 2, 0).finished());
-void Constraints::checkFacePRUNED(const Eigen::VectorX<bool>& pruneVec, const Eigen::VectorX<long> cumSumPruneVec, std::vector<TripletInt8> &delEntries, Eigen::MatrixXi &E, int e, int f) {
+inline void Constraints::checkFacePRUNED(const Eigen::VectorX<bool>& pruneVec, const Eigen::VectorX<long>& cumSumPruneVec, std::vector<TripletInt8> &delEntries, Eigen::MatrixXi &E, int e, int f) {
 
     // TODO:
     if (!pruneVec(f)) {
@@ -30,6 +30,16 @@ void Constraints::checkFacePRUNED(const Eigen::VectorX<bool>& pruneVec, const Ei
     }
 
     f = cumSumPruneVec(f) - 1;
+
+    /*if (f > numProductFaces ) {
+        std::cout << "f to large" << std::endl;
+        return;
+    }
+
+    if (e > numProductEdges ) {
+        std::cout << "e to large" << std::endl;
+        return;
+    }*/
     
     uint8_t numAdded = 0;
     
@@ -112,7 +122,7 @@ void Constraints::findVerticesInEdgesMatrixPRUNED(const int vertexIdx, Shape &sh
              numVerticesY * numFacesX;
     => searchDegEdgesInEdges2Triangle(delEntries, E, e, LocEXinFX, eToEYTranslator, eToEXTranslator, shapeY, numEdgesY, numFacesY, numEdgesX, numFaceX, offset)
  */
-void Constraints::searchDegEdgesInEdges2TrianglePRUNED(const Eigen::VectorX<bool>& pruneVec, const Eigen::VectorX<long> cumSumPruneVec, std::vector<TripletInt8> &delEntries, Eigen::MatrixXi &E, int e, Eigen::MatrixXi &LocEYinFY, Eigen::MatrixXi &eToEXTranslator, Eigen::MatrixXi &eToEYTranslator, Shape &shape, int numEX, int numFX, int numEY, int numFY, int offset) {
+void Constraints::searchDegEdgesInEdges2TrianglePRUNED(const Eigen::VectorX<bool>& pruneVec, const Eigen::VectorX<long>& cumSumPruneVec, std::vector<TripletInt8> &delEntries, Eigen::MatrixXi &E, int e, Eigen::MatrixXi &LocEYinFY, Eigen::MatrixXi &eToEXTranslator, Eigen::MatrixXi &eToEYTranslator, Shape &shape, int numEX, int numFX, int numEY, int numFY, int offset) {
     
     const int vertexIdx = eToEXTranslator(e);
     Eigen::MatrixXi idxes(IDX.rows(), 2);
@@ -155,7 +165,7 @@ void Constraints::searchDegEdgesInEdges2TrianglePRUNED(const Eigen::VectorX<bool
     offset = offset = 12 * numFacesXxNumFacesY + numVerticesX * numFacesY + numVerticesY * numFacesX;
     => searchInEdges2Triangle(delEntries, E, e, LocEXinFX, eToEYTranslator, eToEXTranslator, numEdgesY, numFacesX, offset)
  */
-void Constraints::searchInEdges2TrianglePRUNED(const Eigen::VectorX<bool>& pruneVec, const Eigen::VectorX<long> cumSumPruneVec, std::vector<TripletInt8> &delEntries, Eigen::MatrixXi &E, int e, Eigen::MatrixXi &LocEYinFY, Eigen::MatrixXi &eToEXTranslator, Eigen::MatrixXi &eToEYTranslator, int numE, int numF, int offset) {
+void Constraints::searchInEdges2TrianglePRUNED(const Eigen::VectorX<bool>& pruneVec, const Eigen::VectorX<long>& cumSumPruneVec, std::vector<TripletInt8> &delEntries, Eigen::MatrixXi &E, int e, Eigen::MatrixXi &LocEYinFY, Eigen::MatrixXi &eToEXTranslator, Eigen::MatrixXi &eToEYTranslator, int numE, int numF, int offset) {
     
     // the i loop accounts for the possible rotations
     for (int i = 0; i < 3; i++) {
@@ -188,7 +198,7 @@ void Constraints::searchInEdges2TrianglePRUNED(const Eigen::VectorX<bool>& prune
  offset = 12 * numFacesXxNumFacesY + numVerticesX * numFacesY;
    => searchInVertex2Triangle(delEntries, E, e, LocEXinFX, eToEYTranslator, eToEXTranslator, numFacesX, offset);
  */
-void Constraints::searchInVertex2TrianglePRUNED(const Eigen::VectorX<bool>& pruneVec, const Eigen::VectorX<long> cumSumPruneVec, std::vector<TripletInt8> &delEntries, Eigen::MatrixXi &E, int e, Eigen::MatrixXi &LocEYinFY, Eigen::MatrixXi &eToEXTranslator, Eigen::MatrixXi &eToEYTranslator, int numF, int offset) {
+void Constraints::searchInVertex2TrianglePRUNED(const Eigen::VectorX<bool>& pruneVec, const Eigen::VectorX<long>& cumSumPruneVec, std::vector<TripletInt8> &delEntries, Eigen::MatrixXi &E, int e, Eigen::MatrixXi &LocEYinFY, Eigen::MatrixXi &eToEXTranslator, Eigen::MatrixXi &eToEYTranslator, int numF, int offset) {
     
     int f = offset + eToEXTranslator(e) * numF;
     
@@ -203,7 +213,7 @@ void Constraints::searchInVertex2TrianglePRUNED(const Eigen::VectorX<bool>& prun
     
 }
 
-void Constraints::searchInNonDegenerateFacesPRUNED(const Eigen::VectorX<bool>& pruneVec, const Eigen::VectorX<long> cumSumPruneVec, std::vector<TripletInt8> &delEntries, Eigen::MatrixXi &E, int e, Eigen::MatrixXi &LocEXinFX, Eigen::MatrixXi &LocEYinFY, Eigen::MatrixXi &eToEXTranslator, Eigen::MatrixXi &eToEYTranslator) {
+void Constraints::searchInNonDegenerateFacesPRUNED(const Eigen::VectorX<bool>& pruneVec, const Eigen::VectorX<long>& cumSumPruneVec, std::vector<TripletInt8> &delEntries, Eigen::MatrixXi &E, int e, Eigen::MatrixXi &LocEXinFX, Eigen::MatrixXi &LocEYinFY, Eigen::MatrixXi &eToEXTranslator, Eigen::MatrixXi &eToEYTranslator) {
     // this i-loop accounts for the different rotations of the triangles
     for (int i = 0; i < 3; i++) {
         int f = i * numFacesXxNumFacesY;
@@ -324,7 +334,6 @@ void Constraints::getDelOptimizedPRUNED(std::vector<TripletInt8>& delEntries, co
     Eigen::MatrixXi LocEYinFY = shapeY.getLocEinF();
     Eigen::MatrixXi eToEXTranslator = constructEtoEdgesXTranslator();
     Eigen::MatrixXi eToEYTranslator = constructEtoEdgesYTranslator();
-
     pruneEdgeProductSpace(E, eToEXTranslator, eToEYTranslator, coarsep2pmap, IXf2c, IYf2c);
     numProductEdges = E.rows();
 
@@ -344,11 +353,10 @@ void Constraints::getDelOptimizedPRUNED(std::vector<TripletInt8>& delEntries, co
             break;
         }
     }
-    
 #ifdef LARGE_EDGE_PRODUCT_SPACE
-    int eLarger = numEdgesNonDegenerate;
-#else
     int eLarger = 0;
+#else
+    int eLarger = -numEdgesNonDegenerate/2;
 #endif
     
     #if defined(_OPENMP)

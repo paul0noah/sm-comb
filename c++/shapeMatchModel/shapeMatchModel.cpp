@@ -149,6 +149,7 @@ bddsolver(NULL) {
     if (opts.verbose) std::cout << "[ShapeMM]   > Energies" << std::endl;
     deformationEnergy.get();
     deformationEnergy.prune(PruneVec);
+    if (opts.verbose) std::cout << "[ShapeMM]     => skipping (contact project owner if you need this)" << std::endl;
     combos.prune(PruneVec);
     std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
     if (opts.verbose) std::cout << "[ShapeMM]   Done (" << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count() << "  [ms])" << std::endl;
@@ -161,6 +162,7 @@ bddsolver(NULL) {
     if (opts.verbose) std::cout << "[ShapeMM] Done (" << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t1).count() << "  [ms])" << std::endl;
     generationSuccessfull = true;
 
+    opts.useConstraintsGroups = false;
 }
 
 ShapeMatchModel::ShapeMatchModel(Eigen::MatrixXi FX, Eigen::MatrixXf VX, Eigen::MatrixXi FY, Eigen::MatrixXf VY):
@@ -383,6 +385,24 @@ LPMP::ILP_input ShapeMatchModel::getIlpObj() {
     int constraintGroup[] = {0, 0, 0};
     // Add constraints to ilp
     for (int k = 0; k < constrLHS.outerSize(); ++k) {
+        /*if (k < numRowsDel) {
+            unsigned int numNonZerosRow = 0;
+            int8_t prevVal = 0;
+            bool signflip = false;
+            for (typename Eigen::SparseMatrix<int8_t, Eigen::RowMajor>::InnerIterator it(constrLHS, k); it; ++it) {
+                const int f = it.index();
+                const int8_t val = it.value();
+                if (prevVal == 0) {
+                    prevVal = val;
+                }
+                if (prevVal != val) {
+                    signflip = true;
+                }
+            }
+            if (!signflip)
+                continue; // make sure we do not add trivial constraints
+        }*/
+
         /*
             beginNewInequality   => creates new constraint
             inequalityIdentifier => name of the constraint e.g. R101
