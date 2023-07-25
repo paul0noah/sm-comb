@@ -24,7 +24,6 @@ const EDGE idxEdge1((EDGE() << 1, 2).finished());
 const EDGE idxEdge2((EDGE() << 2, 0).finished());
 inline void Constraints::checkFacePRUNED(const Eigen::VectorX<bool>& pruneVec, const Eigen::VectorX<long>& cumSumPruneVec, std::vector<TripletInt8> &delEntries, Eigen::MatrixXi &E, int e, int f) {
 
-    // TODO:
     if (!pruneVec(f)) {
         return;
     }
@@ -241,10 +240,10 @@ void pruneEdgeProductSpace(Eigen::MatrixXi& E, Eigen::MatrixXi& eToEXTranslator,
             p2pmatrix(i, j) = false;
         }
     }
-    p2pmatrix.setZero();
+    //p2pmatrix.setZero();
     // init p2p matrix
     for (int i = 0; i < coarsep2pmap.rows(); i++) {
-        p2pmatrix(coarsep2pmap(i, 0), coarsep2pmap(i, 1)) = 1;
+        p2pmatrix(coarsep2pmap(i, 0), coarsep2pmap(i, 1)) = true;
     }
 
     Eigen::MatrixXi prunedE(E.rows(), 4);
@@ -252,8 +251,8 @@ void pruneEdgeProductSpace(Eigen::MatrixXi& E, Eigen::MatrixXi& eToEXTranslator,
     Eigen::MatrixXi prunedEToEYTranslator(E.rows(), 1);
     long numE = 0;
     for (long e = 0; e < E.rows(); e++) {
-        const bool firstp2p = p2pmatrix( IXf2c(E(e, 0)), IYf2c(E(e, 0)) );
-        const bool seconp2p = p2pmatrix( IXf2c(E(e, 1)), IYf2c(E(e, 1)) );
+        const bool firstp2p = p2pmatrix( IXf2c(E(e, 0)), IYf2c(E(e, 2)) );
+        const bool seconp2p = p2pmatrix( IXf2c(E(e, 1)), IYf2c(E(e, 3)) );
         if (firstp2p || seconp2p) {
             prunedE(numE, Eigen::all) = E(e, Eigen::all);
             prunedEToEXTranslator(numE, 0) = eToEXTranslator(e, 0);
@@ -261,12 +260,13 @@ void pruneEdgeProductSpace(Eigen::MatrixXi& E, Eigen::MatrixXi& eToEXTranslator,
             numE++;
         }
     }
-    prunedE.conservativeResize(numE, 2);
+
+    prunedE.conservativeResize(numE, 4);
     E = prunedE;
-    prunedEToEXTranslator.conservativeResize(numE, 2);
+    prunedEToEXTranslator.conservativeResize(numE, 1);
     eToEXTranslator = prunedEToEXTranslator;
-    prunedEToEYTranslator.conservativeResize(numE, 2);
-    eToEXTranslator = prunedEToEYTranslator;
+    prunedEToEYTranslator.conservativeResize(numE, 1);
+    eToEYTranslator = prunedEToEYTranslator;
 }
 
 
@@ -339,25 +339,20 @@ void Constraints::getDelOptimizedPRUNED(std::vector<TripletInt8>& delEntries, co
 
     // find num nondeg and num deg
     const int numEdges = E.rows();
-    int numEdgesNonDegenerate = numEdgesX * numEdgesY;
-    for (long i = 0; i < numEdgesNonDegenerate; i++) {
+    int numEdgesNonDegenerate = 2 * numEdgesX * numEdgesY;
+    for (long i = 0; i < 2 * numEdgesX * numEdgesY; i++) {
         if (E(i, 0) == E(i, 1)) {
-            numEdgesNonDegenerate = i + 1;
+            numEdgesNonDegenerate = i;
             break;
         }
     }
     int numEdgesYNonDegenerate = numEdgesNonDegenerate + numVerticesX * numEdgesY;
-    for (long i = numEdgesNonDegenerate; i < numEdgesYNonDegenerate; i++) {
+    for (long i = numEdgesNonDegenerate; i < numEdgesNonDegenerate + numVerticesX * numEdgesY; i++) {
         if (E(i, 2) == E(i, 3)) {
-            numEdgesYNonDegenerate = i + 1;
+            numEdgesYNonDegenerate = i;
             break;
         }
     }
-#ifdef LARGE_EDGE_PRODUCT_SPACE
-    int eLarger = 0;
-#else
-    int eLarger = -numEdgesNonDegenerate/2;
-#endif
     
     #if defined(_OPENMP)
     #pragma omp parallel
@@ -383,7 +378,7 @@ void Constraints::getDelOptimizedPRUNED(std::vector<TripletInt8>& delEntries, co
         #if defined(_OPENMP)
         #pragma omp for nowait
         #endif
-        for (int e = 0; e < numEdgesNonDegenerate + eLarger; e++) {
+        for (int e = 0; e < numEdgesNonDegenerate; e++) {
             searchInNonDegenerateFacesPRUNED(pruneVec, cumSumPruneVec, delEntriesPriv, E, e, LocEXinFX, LocEYinFY, eToEXTranslator, eToEYTranslator);
             //searchInEdgesX2TriangleY
             searchInEdges2TrianglePRUNED(pruneVec, cumSumPruneVec, delEntriesPriv, E, e, LocEYinFY, eToEXTranslator, eToEYTranslator, numEdgesX, numFacesY, offsetEX2TY);
@@ -403,7 +398,7 @@ void Constraints::getDelOptimizedPRUNED(std::vector<TripletInt8>& delEntries, co
         #if defined(_OPENMP)
         #pragma omp for nowait
         #endif
-        for (int e  = eLarger + numEdgesNonDegenerate; e < eLarger + numEdgesYNonDegenerate; e++) {
+        for (int e  = numEdgesNonDegenerate; e < numEdgesYNonDegenerate; e++) {
             searchInVertex2TrianglePRUNED(pruneVec, cumSumPruneVec, delEntriesPriv, E, e, LocEYinFY, eToEXTranslator, eToEYTranslator, numFacesY, offsetVX2TY);
             // searchDegEdgesXInEdgesX2TriangleY
             searchDegEdgesInEdges2TrianglePRUNED(pruneVec, cumSumPruneVec, delEntriesPriv, E, e, LocEYinFY, eToEXTranslator, eToEYTranslator, shapeX, numEdgesX, numFacesX, numEdgesY, numFacesY, offsetDegEX);
@@ -418,7 +413,7 @@ void Constraints::getDelOptimizedPRUNED(std::vector<TripletInt8>& delEntries, co
         #if defined(_OPENMP)
         #pragma omp for nowait
         #endif
-        for (int e  = eLarger + numEdgesYNonDegenerate; e < numEdges; e++) {
+        for (int e  = numEdgesYNonDegenerate; e < numEdges; e++) {
             //searchInVertexY2TriangleX
             searchInVertex2TrianglePRUNED(pruneVec, cumSumPruneVec, delEntriesPriv, E, e, LocEXinFX, eToEYTranslator, eToEXTranslator, numFacesX, offsetVY2TX);
             
