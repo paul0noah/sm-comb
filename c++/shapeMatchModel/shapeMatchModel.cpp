@@ -598,7 +598,16 @@ Eigen::VectorX<bool> ShapeMatchModel::getPruneVec(Eigen::MatrixXi& coarsep2pmap,
         const bool firstp2p = p2pmatrix( IXf2c(FXCombo(f, 0)), IYf2c(FYCombo(f, 0)) );
         const bool seconp2p = p2pmatrix( IXf2c(FXCombo(f, 1)), IYf2c(FYCombo(f, 1)) );
         const bool thirdp2p = p2pmatrix( IXf2c(FXCombo(f, 2)), IYf2c(FYCombo(f, 2)) );
-        if (firstp2p || seconp2p || thirdp2p) {
+
+        const bool p2p4 = p2pmatrix( IXf2c(FXCombo(f, 0)), IYf2c(FYCombo(f, 1)) );
+        const bool p2p5 = p2pmatrix( IXf2c(FXCombo(f, 1)), IYf2c(FYCombo(f, 2)) );
+        const bool p2p6 = p2pmatrix( IXf2c(FXCombo(f, 2)), IYf2c(FYCombo(f, 0)) );
+
+        const bool p2p7 = p2pmatrix( IXf2c(FXCombo(f, 0)), IYf2c(FYCombo(f, 2)) );
+        const bool p2p8 = p2pmatrix( IXf2c(FXCombo(f, 1)), IYf2c(FYCombo(f, 0)) );
+        const bool p2p9 = p2pmatrix( IXf2c(FXCombo(f, 2)), IYf2c(FYCombo(f, 1)) );
+
+        if (firstp2p || seconp2p || thirdp2p || p2p4 || p2p5 || p2p6 || p2p7 || p2p8 || p2p9) {
             PruneVec(f) = true;
         }
         else {

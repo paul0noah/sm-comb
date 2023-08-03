@@ -253,7 +253,9 @@ void pruneEdgeProductSpace(Eigen::MatrixXi& E, Eigen::MatrixXi& eToEXTranslator,
     for (long e = 0; e < E.rows(); e++) {
         const bool firstp2p = p2pmatrix( IXf2c(E(e, 0)), IYf2c(E(e, 2)) );
         const bool seconp2p = p2pmatrix( IXf2c(E(e, 1)), IYf2c(E(e, 3)) );
-        if (firstp2p || seconp2p) {
+        const bool thirdp2p = p2pmatrix( IXf2c(E(e, 0)), IYf2c(E(e, 3)) );
+        const bool fourthp2p = p2pmatrix( IXf2c(E(e, 1)), IYf2c(E(e, 2)) );
+        if (firstp2p || seconp2p || thirdp2p || fourthp2p) {
             prunedE(numE, Eigen::all) = E(e, Eigen::all);
             prunedEToEXTranslator(numE, 0) = eToEXTranslator(e, 0);
             prunedEToEYTranslator(numE, 0) = eToEYTranslator(e, 0);
