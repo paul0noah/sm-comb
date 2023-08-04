@@ -375,7 +375,7 @@ LPMP::ILP_input ShapeMatchModel::getIlpObj() {
     // Add variables to ilp
     for (int i = 0; i < objective.rows(); i++) {
         std::string varName = getVariableName(i, FaCombo, FbCombo);
-        ilp.add_new_variable(std::to_string(i));
+        ilp.add_new_variable(varName);
         ilp.add_to_objective((double) objective(i), i);
     }
     assert(ilp.nr_variables() == constrLHS.cols());
