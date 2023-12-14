@@ -8,7 +8,7 @@ It aims to solve the Integer Linear Program for Shape Matching (ILP-SM) proposed
 ## ⚙️ Installation
 
 ### 🐍 Python
-Simply download the repo and python setup.py install (you need working c++ compiler + cmake installed on your machine).
+Simply download the repo and `python setup.py install` (you need working c++ compiler + cmake installed on your machine).
 
 ### 🚀 Cpp
 
@@ -39,7 +39,7 @@ The build currently is only tested on MacOS. If you have difficulties building t
 ### 🐍 Python
 Vanilla usage as used in our paper:
 
-```
+```python
 from shape_match_model_pb import ShapeMatchModel
 import numpy as np
 from scipy import sparse
@@ -68,7 +68,7 @@ smm.plotSolution(sG)
 ``` 
 
 Other available function:
-```
+```python
 # smm can be created also by passing numpy arrays FX contains triangles of shape X and VX contains vertex coordinates of shape X
 smm = smm = ShapeMatchModel(FX, VX, FY, VY)
 
@@ -109,7 +109,7 @@ ilp = smm.getIlpObj()
 To perfrom shape matching you will need to create a so-called `ShapeMatchModel` object. This object provides the API necessary to solve the ILP-SM, write the ILP-SM to a file, plot results and write the model to file.
 ##### Creating a ShapeMatchModel: 
 The following example code creates a `ShapeMatchModel` object with the modelname `myShapeMatchModel`:
-```
+```c++
 #include "shapeMatchModel/shapeMatchModel.hpp"
 int main(int argc, char *argv[]) {
     const std::string filenameShape1 = "path/to/your/shape1.{.ply, .off}";
@@ -122,7 +122,7 @@ int main(int argc, char *argv[]) {
 Note: your shapes have to closed and oriented triangle meshes. If they aren't you e.g. can use Meshalb to make the mesh oriented (`Filters > Normals, Curvature, ... > Re-Orient all faces coherently`) as well as closed (`Filters > Remeshing, ... > Close Holes`)
 
 You can solve the ILP-SM as well as plot the solution as follows:
-```
+```c++
 MatrixInt8 Gamma = smm.solve();
 smm.plotInterpolatedSolution(Gamma);
 ```
@@ -148,7 +148,7 @@ Partial Shapes are a special case and a little more time demanding to set up. We
 
 After setting everything use the following code to create a shape match model while providing the target number of faces you want to perform the matching on.
 Note: with this approach you are able to produce plots of the matched models which contain holes.
-```
+```c++
 #include "partialShapesHandler.hpp"
 int main(int argc, char *argv[]) {
     const std::string filenameShape1 = "path/to/your/<shapename1>.ply";
@@ -174,7 +174,7 @@ int main(int argc, char *argv[]) {
 
 ##### Available Options: 
 ShapeMatchModelOpts:
-```
+```c++
     // toggle output of ShapeMatchModel
     opts.verbose; 
     // limit the number of dual solver calls (might result in unfinished primal solution)
@@ -191,7 +191,7 @@ ShapeMatchModelOpts:
     opts.bddSolverOpts; 
 ```
 PrimalHeuristicOpts:
-```
+```c++
     // max iterations primal heuristic runs
     opts.primalHeuristicOpts.maxIter; 
     // primal heuristic stops if number of backtracks is larger than maxBacktracks 
@@ -208,7 +208,7 @@ PrimalHeuristicOpts:
     opts.primalHeuristicOptsmaxNumInitCandidates; 
 ```
 Dual Solver options
-```
+```c++
     // choose implementation of implementation = {parallel_mma, sequential_mma}
     opts.bddSolverOpts.bdd_solver_impl_ = LPMP::bdd_solver_options::bdd_solver_impl::implementation;
     // precision of solver
