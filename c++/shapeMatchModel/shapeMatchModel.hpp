@@ -87,6 +87,7 @@ private:
     float initialLowerBound;
     bool generationSuccessfull;
     bool pruned;
+    bool constraintsFulfilled;
     Eigen::VectorX<bool> pruneveci;
     Eigen::VectorX<bool> getPruneVec(Eigen::MatrixXi& coarsep2pmap, Eigen::MatrixXi& IXf2c, Eigen::MatrixXi& IYf2c);
     
@@ -121,6 +122,7 @@ public:
     float getFinalEnergy(const SparseVecInt8 &Gamma);
     float getLowerBound();
     bool smmCreatedSuccessFully();
+    bool constraintsFullfilled() const;
     Eigen::MatrixXi& getFaCombo();
     Eigen::MatrixXi& getFbCombo();
     void constantPenaliseDegenerate(float addval);

@@ -30,6 +30,7 @@ PYBIND11_MODULE(shape_match_model_pb, handle) {
     smm.def("getFinalEnergy", &ShapeMatchModel::getFinalEnergy);
     smm.def("getLowerBound", &ShapeMatchModel::getLowerBound);
     smm.def("smmCreatedSuccessFully", &ShapeMatchModel::smmCreatedSuccessFully);
+    smm.def("constraintsFullfilled", &ShapeMatchModel::constraintsFullfilled);
     smm.def("getFXCombo", &ShapeMatchModel::getFaCombo);
     smm.def("getFYCombo", &ShapeMatchModel::getFbCombo);
     smm.def("saveSmmAsILP", &ShapeMatchModel::saveIlpAsLp);

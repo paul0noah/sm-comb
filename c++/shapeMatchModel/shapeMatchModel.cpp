@@ -45,6 +45,7 @@ bool ShapeMatchModel::checkWatertightness() {
 
 
 void ShapeMatchModel::generate() {
+    constraintsFulfilled = false;
     pruned = false;
     initialLowerBound = -1;
     generationSuccessfull = false;
@@ -814,6 +815,10 @@ float ShapeMatchModel::getLowerBound() {
     return initialLowerBound;
 }
 
+bool ShapeMatchModel::constraintsFullfilled() const {
+    return constraintsFulfilled;
+}
+
 MatrixInt8 ShapeMatchModel::solve() {
 
     if (pruned) {
@@ -922,6 +927,7 @@ MatrixInt8 ShapeMatchModel::solve() {
             }
         }
     }
+    constraintsFulfilled = heuristicStatus == SOL_COMPLETE;
     
     if (opts.verbose) printSolutionInfo(Gamma.sparseView());
     if (opts.writeModelToFileAfterSolving) writeSolutionToFile(Gamma);
