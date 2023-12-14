@@ -1,4 +1,4 @@
-# A Scalable Combinatorial Solver for Elastic Geometrically Consistent 3D Shape Matching
+# SM-Comb
 
 This repository contains the code of the paper 
 "A Scalable Combinatorial Solver for Elastic Geometrically Consistent 3D Shape Matching", P. Roetzer, P. Swoboda, D. Cremers, F. Bernard. IEEE Conference on Computer Vision and Pattern Recognition (CVPR) 2022.
@@ -39,33 +39,33 @@ The build currently is only tested on MacOS. If you have difficulties building t
 ### 🐍 Python
 Vanilla usage as used in our paper:
 
-    ```
-    from shape_match_model_pb import ShapeMatchModel
-    import numpy as np
-    from scipy import sparse
+```
+from shape_match_model_pb import ShapeMatchModel
+import numpy as np
+from scipy import sparse
 
-    # create smm model in which shapes X and Y (.ply or .off files) are reduced to 100 and 110 triangles respectively
-    # (if each shape contains already less triangles, the shapes are not reduced)
-    # Note: size of ILP grows quadratically with number of triangles of one of the shape 
-    # We recommend using less than 1000 triangles for each shape
-    smm = ShapeMatchModel("yourFile1{.ply, .off}", 100, "yourFile2{.ply, .off}", 110)
+# create smm model in which shapes X and Y (.ply or .off files) are reduced to 100 and 110 triangles respectively
+# (if each shape contains already less triangles, the shapes are not reduced)
+# Note: size of ILP grows quadratically with number of triangles of one of the shape 
+# We recommend using less than 1000 triangles for each shape
+smm = ShapeMatchModel("yourFile1{.ply, .off}", 100, "yourFile2{.ply, .off}", 110)
 
-    # solve the LP (with our combinatorial solver) and obtain binary vector G
-    G = smm.solve()
-    
-    # check if solution fullfills constraints
-    if not smm.constraintsFullfilled():
-        print("SM-comb could NOT find primal feasible solution")
+# solve the LP (with our combinatorial solver) and obtain binary vector G
+G = smm.solve()
 
-    # convert G to sparse int8 matrix
-    sG = sparse.csr_matrix(G, dtype=np.int8)
+# check if solution fullfills constraints
+if not smm.constraintsFullfilled():
+    print("SM-comb could NOT find primal feasible solution")
 
-    # get point correspondences from solution
-    p_c = smm.getPointMatchesFromSolution(sG)
+# convert G to sparse int8 matrix
+sG = sparse.csr_matrix(G, dtype=np.int8)
 
-    # plot result color coded
-    smm.plotSolution(sG)
-    ``` 
+# get point correspondences from solution
+p_c = smm.getPointMatchesFromSolution(sG)
+
+# plot result color coded
+smm.plotSolution(sG)
+``` 
 
 Other available function:
 ```
