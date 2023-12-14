@@ -5,7 +5,13 @@ This repository contains the code of the paper
 It aims to solve the Integer Linear Program for Shape Matching (ILP-SM) proposed by Windheuser et al. in "Geometrically Consistent Elastic Matching of 3D Shapes: A Linear Programming Solution".
 
 
-## How to use our C++ implementation
+## ⚙️ Installation
+
+### 🐍 Python
+Simply download the repo and python setup.py install (you need working c++ compiler + cmake installed on your machine).
+
+### 🚀 Cpp
+
 Clone the project and run the following commands inside the projects `c++` folder:
 ```
 git submodule update --init --recursive
@@ -18,13 +24,90 @@ If you want the XCODE IDE run:
 ```
 The build currently is only tested on MacOS. If you have difficulties building the project contact `paul.roetzer@tum.de`.
 
-### Requirements: 
+### 🚧 Troubleshooting
+#### OpenMP not found on MacOS
+    On MacOS we experienced the problem problems of cmake finding OpenMP library.
+    - Try installing OpenMP with Homebrew `brew install libomp`
+    - Add the following flags to the cmake command in either `BUILD.sh` or `GENXCODEPROJECT.sh`
+    ```
+        -GXcode -DOpenMP_CXX_FLAGS="-Xclang -fopenmp -I /path/to/libomp/<version>/include/" -DOpenMP_C_FLAGS="-Xclang -fopenmp -I /path/to/libomp/<version>/include/" -DOpenMP_CXX_LIB_NAMES=libomp  -DOpenMP_C_LIB_NAMES=libomp -DOpenMP_libomp_LIBRARY=//path/to/libomp/<version>/lib/libomp.dylib -DCMAKE_SHARED_LINKER_FLAGS="-L /path/to/libomp/<version>/lib -lomp -Wl,-rpath, /path/to/libomp/<version>/lib"
+    ```
+    Usually `path/to/libomp` is `/opt/homebrew/Cellar/libomp/`
+
+## ✨ Usage
+
+### 🐍 Python
+Vanilla usage as used in our paper:
+
+    ```
+    from shape_match_model_pb import ShapeMatchModel
+    import numpy as np
+    from scipy import sparse
+
+    # create smm model in which shapes X and Y (.ply or .off files) are reduced to 100 and 110 triangles respectively
+    # (if each shape contains already less triangles, the shapes are not reduced)
+    # Note: size of ILP grows quadratically with number of triangles of one of the shape 
+    # We recommend using less than 1000 triangles for each shape
+    smm = ShapeMatchModel("yourFile1{.ply, .off}", 100, "yourFile2{.ply, .off}", 110)
+
+    # solve the LP (with our combinatorial solver) and obtain binary vector G
+    G = smm.solve()
+    
+    # check if solution fullfills constraints
+    if not smm.constraintsFullfilled():
+        print("SM-comb could NOT find primal feasible solution")
+
+    # convert G to sparse int8 matrix
+    sG = sparse.csr_matrix(G, dtype=np.int8)
+
+    # get point correspondences from solution
+    p_c = smm.getPointMatchesFromSolution(sG)
+
+    # plot result color coded
+    smm.plotSolution(sG)
+    ``` 
+
+Other available function:
+```
+# smm can be created also by passing numpy arrays FX contains triangles of shape X and VX contains vertex coordinates of shape X
+smm = smm = ShapeMatchModel(FX, VX, FY, VY)
+
+# check if smm was created successfully (i.e. if shapes are watertight)
+if smm.smmCreatedSuccessFully():
+    print("smm created successfully")
+    
+# update the energy function by using a |VX| x |VY| sized feature difference matrix
+FEAT_DIFF = .. # np array of size |VX| x |VY| where lower values mean more similar features
+smm.updateEnergy(FEAT_DIFF, True, False, 0) 
+ 
+# export as lp file
+smm.saveAsLPFile("your_lp_filename.lp")
+
+# return final energy getFinalEnergy (note this is only the upperbound if `smm.constraintsFullfilled() == True`)
+energy = smm.getFinalEnergy(sG)
+
+# extract the lower bound
+lb = smm.getLowerBound()
+
+# return triangle-based matchings
+fx_sol = smm.getFXCombo()[sG.indices, :]
+fy_sol = smm.getFYCombo()[sG.indices, :]
+
+# return ilp object (readable by bdd solver)
+ilp = smm.getIlpObj()
+
+```
+
+
+### 🚀 Cpp
+
+#### Requirements: 
 - `OpenMP` not mandatory but highly recommended
 - `OpenGL` for plotting results
 
-### Usage: 
+#### Usage: 
 To perfrom shape matching you will need to create a so-called `ShapeMatchModel` object. This object provides the API necessary to solve the ILP-SM, write the ILP-SM to a file, plot results and write the model to file.
-#### Creating a ShapeMatchModel: 
+##### Creating a ShapeMatchModel: 
 The following example code creates a `ShapeMatchModel` object with the modelname `myShapeMatchModel`:
 ```
 #include "shapeMatchModel/shapeMatchModel.hpp"
@@ -43,7 +126,7 @@ You can solve the ILP-SM as well as plot the solution as follows:
 MatrixInt8 Gamma = smm.solve();
 smm.plotInterpolatedSolution(Gamma);
 ```
-#### Exporting Model:
+##### Exporting Model:
 There are several ways to export the mode
 - Exporting Model as `.lp` with `smm.saveIlpAsLp(const std::string& filename)`
 - Exporting Model `smm.writeModelToFile()` (assumes you provided a modelname)
@@ -56,7 +139,7 @@ When `opts.writeModelToFileAfterSolving == true` additional files are written af
 `<modelname>_Gamma.csv`: the vector containing the solution (triangle correspondences)
 `<modelname>_time.csv`: contains the durations `total time, time heuristic, time dual solver`
 
-### Partial Shapes
+#### Partial Shapes
 Partial Shapes are a special case and a little more time demanding to set up. We explain a potential workflow:
 - choose a shape of the Tosca partial dataset
 - load the shape into meshlab, make sure it is oriented and export the shape as `<shapename1>original.ply`
@@ -89,7 +172,7 @@ int main(int argc, char *argv[]) {
 ```
 
 
-#### Available Options: 
+##### Available Options: 
 ShapeMatchModelOpts:
 ```
     // toggle output of ShapeMatchModel
@@ -134,77 +217,15 @@ Dual Solver options
     bddSolverOpts.tolerance = 1e-6;
 ```
 
-## Python bindings
-Reduced functionality is available in python as python bindings, including: 
-- creating `ShapeMatchModel`
-- solving ILP
-- plotting solution 
-- returning point correspondences
-- updating the energy
+## 🔡 Misc
 
-### Warning
-Python bindings are still under development. Expect issues :D 
+### References 
+- [1] Windheuser, T., Schlickwei, U., Schimdt, F. R., & Cremers, D. (2011, August). Large‐scale integer linear programming for orientation preserving 3d shape matching. In Computer Graphics Forum (Vol. 30, No. 5, pp. 1471-1480). Oxford, UK: Blackwell Publishing Ltd.  
+- [2] Windheuser, T., Schlickewei, U., Schmidt, F. R., & Cremers, D. (2011, November). Geometrically consistent elastic matching of 3d shapes: A linear programming solution. In 2011 International Conference on Computer Vision (pp. 2134-2141). IEEE.  
+- [3] Lange, J. H., & Swoboda, P. (2021, July). Efficient Message Passing for 0–1 ILPs with Binary Decision Diagrams. In International Conference on Machine Learning (pp. 6000-6010). PMLR.  
+- [4] P. Roetzer, P. Swoboda, D. Cremers, F. Bernard (2021). A Scalable Combinatorial Solver for Elastic Geometrically Consistent 3D Shape Matching. In IEEE Conference on Computer Vision and Pattern Recognition (CVPR). 2022
 
-### Usage 
-- navigate with terminal to `c++` folder of repository
-- run `python3 setup.py install` (requires python3)
-- use python bindings as shown with following example code
-    ```
-    from shape_match_model_pb import ShapeMatchModel
-    import numpy as np
-    from scipy import sparse
-
-    # create smm model in which shapes X and Y (.ply or .off files) are reduced to 100 and 110 triangles respectively
-    # (if each shape contains already less triangles, the shapes are not reduced)
-    # Note: size of ILP grows quadratically with number of triangles of one of the shape 
-    # We recommend using less than 1000 triangles for each shape
-    smm = ShapeMatchModel("yourFile1{.ply, .off}", 100, "yourFile2{.ply, .off}", 110)
-
-    # solve the LP (with our combinatorial solver) and obtain binary vector G
-    G = smm.solve()
-
-    # convert G to sparse int8 matrix
-    sG = sparse.csr_matrix(G, dtype=np.int8)
-
-    # get point correspondences from solution
-    p_c = smm.getPointMatchesFromSolution(sG)
-
-    # plot result color coded
-    smm.plotSolution(sG)
-    ``` 
-
-
-### Usage For Local Build
-- navigate with terminal to `c++` folder of repository
-- run `BUILD_PB.sh` (which creates folder `smpb` in `c++` folder and builds python bindings)
-- use python bindings as shown with following example code (assuming root directory is `c++` folder)
-    ```
-    from smpb.shape_match_model_pb import ShapeMatchModel
-    import numpy as np
-    from scipy import sparse
-
-    # create smm model in which shapes X and Y (.ply or .off files) are reduced to 100 and 110 triangles respectively
-    # (if each shape contains already less triangles, the shapes are not reduced)
-    # Note: size of ILP grows quadratically with number of triangles of one of the shape 
-    # We recommend using less than 1000 triangles for each shape
-    smm = ShapeMatchModel("yourFile1{.ply, .off}", 100, "yourFile2{.ply, .off}", 110)
-
-    # solve the LP (with our combinatorial solver) and obtain binary vector G
-    
-    # solve the LP (with our combinatorial solver) and obtain binary vector G
-    G = smm.solve()
-
-    # convert G to sparse int8 matrix
-    sG = sparse.csr_matrix(G, dtype=np.int8)
-
-    # get point correspondences from solution
-    p_c = smm.getPointMatchesFromSolution(sG)
-
-    # plot result color coded
-    smm.plotSolution(sG)
-    ``` 
-
-## Used Libraries
+### Used Libraries
 | Lib Name | Functionality |
 | ------ | ------ |
 | [BDD-Solver](https://github.com/LPMP/BDD) | Solves Dual Problem Efficiently |
@@ -212,19 +233,13 @@ Python bindings are still under development. Expect issues :D
 | [Eigen3](https://gitlab.com/libeigen/eigen) | Convenient Matrix/Vector Handling |
 | [Robin-Map](https://github.com/Tessil/robin-map) | Hash Maps, Hash Sets |
 
-## Troubleshooting
-### OpenMP not found on MacOS
-    On MacOS we experienced the problem problems of cmake finding OpenMP library.
-    - Try installing OpenMP with Homebrew `brew install libomp`
-    - Add the following flags to the cmake command in either `BUILD.sh` or `GENXCODEPROJECT.sh`
-    ```
-        -GXcode -DOpenMP_CXX_FLAGS="-Xclang -fopenmp -I /path/to/libomp/<version>/include/" -DOpenMP_C_FLAGS="-Xclang -fopenmp -I /path/to/libomp/<version>/include/" -DOpenMP_CXX_LIB_NAMES=libomp  -DOpenMP_C_LIB_NAMES=libomp -DOpenMP_libomp_LIBRARY=//path/to/libomp/<version>/lib/libomp.dylib -DCMAKE_SHARED_LINKER_FLAGS="-L /path/to/libomp/<version>/lib -lomp -Wl,-rpath, /path/to/libomp/<version>/lib"
-    ```
-    Usually `path/to/libomp` is `/opt/homebrew/Cellar/libomp/`
-
-
-## References 
-[1] Windheuser, T., Schlickwei, U., Schimdt, F. R., & Cremers, D. (2011, August). Large‐scale integer linear programming for orientation preserving 3d shape matching. In Computer Graphics Forum (Vol. 30, No. 5, pp. 1471-1480). Oxford, UK: Blackwell Publishing Ltd.  
-[2] Windheuser, T., Schlickewei, U., Schmidt, F. R., & Cremers, D. (2011, November). Geometrically consistent elastic matching of 3d shapes: A linear programming solution. In 2011 International Conference on Computer Vision (pp. 2134-2141). IEEE.  
-[3] Lange, J. H., & Swoboda, P. (2021, July). Efficient Message Passing for 0–1 ILPs with Binary Decision Diagrams. In International Conference on Machine Learning (pp. 6000-6010). PMLR.  
-[4] P. Roetzer, P. Swoboda, D. Cremers, F. Bernard (2021). A Scalable Combinatorial Solver for Elastic Geometrically Consistent 3D Shape Matching. In IEEE Conference on Computer Vision and Pattern Recognition (CVPR). 2022
+## 🎓 Attribution 
+```bibtex
+@inproceedings{roetzer2022scalable,
+  title={A scalable combinatorial solver for elastic geometrically consistent 3d shape matching},
+  author={Roetzer, Paul and Swoboda, Paul and Cremers, Daniel and Bernard, Florian},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
+  pages={428--438},
+  year={2022}
+}
+```
