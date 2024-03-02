@@ -742,6 +742,33 @@ void ShapeMatchModel::writeModelForMatlab(std::string filename) {
     utils::writeMatrixToFile(dimension, filename + "_b");
 }
 
+Eigen::MatrixXf ShapeMatchModel::getEforPython() {
+    return getDeformationEnergy();
+}
+
+Eigen::MatrixX<int8_t> ShapeMatchModel::getRHSforPython() {
+    return getConstraintsVector();
+}
+
+std::tuple<Eigen::MatrixXi, Eigen::MatrixXi, Eigen::MatrixX<int8_t>> ShapeMatchModel::getAforPython() {
+    const SparseMatInt8 constrLHS = getConstraintsMatrix();
+    const int nnz = constrLHS.nonZeros();
+    Eigen::MatrixXi I(nnz, 1);
+    Eigen::MatrixXi J(nnz, 1);
+    Eigen::MatrixX<int8_t> V(nnz, 1);
+
+    long c = 0;
+    for (int k = 0; k < constrLHS.outerSize(); ++k) {
+        for (typename Eigen::SparseMatrix<int8_t, Eigen::RowMajor>::InnerIterator it(constrLHS, k); it; ++it) {
+            I(c) = k;
+            J(c) = it.index();
+            V(c) = it.value();
+            c++;
+        }
+    }
+    return std::make_tuple(I, J, V);
+}
+
 void ShapeMatchModel::writeModelToFile() {
     std::filesystem::create_directories(opts.modelName);
     std::cout << "[ShapeMM] Writing Model to file..." << std::endl;

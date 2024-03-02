@@ -41,6 +41,9 @@ PYBIND11_MODULE(shape_match_model_pb, handle) {
     smm.def("pruneWithCoarserMatching", &ShapeMatchModel::pruneWithCoarserMatching);
     smm.def("writeModelForMatlab", &ShapeMatchModel::writeModelForMatlab);
     smm.def("saveAsLPFile", &ShapeMatchModel::saveIlpAsLp);
+    smm.def("getEnergyVector", &ShapeMatchModel::getEforPython);
+    smm.def("getRHSVector", &ShapeMatchModel::getRHSforPython);
+    smm.def("getAMatrix", &ShapeMatchModel::getAforPython);
 
 
     py::class_<LPMP::ILP_input>(handle, "ILP_instance")

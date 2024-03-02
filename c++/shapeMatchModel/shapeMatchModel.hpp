@@ -131,6 +131,9 @@ public:
     void setMaxPrimalHeuristicIters(const int maxiters);
     void pruneWithCoarserMatching(Eigen::MatrixXi& coarsep2pmap, Eigen::MatrixXi& IXf2c, Eigen::MatrixXi& IYf2c);
     void writeModelForMatlab(std::string filename);
+    Eigen::MatrixXf getEforPython();
+    Eigen::MatrixX<int8_t> getRHSforPython();
+    std::tuple<Eigen::MatrixXi, Eigen::MatrixXi, Eigen::MatrixX<int8_t>> getAforPython();
 };
 
 #endif /* ShapeMatchModel_hpp */
