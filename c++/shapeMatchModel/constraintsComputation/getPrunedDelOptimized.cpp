@@ -232,29 +232,20 @@ void Constraints::searchInNonDegenerateFacesPRUNED(const Eigen::VectorX<bool>& p
     }
 }
 
-void pruneEdgeProductSpace(Eigen::MatrixXi& E, Eigen::MatrixXi& eToEXTranslator, Eigen::MatrixXi& eToEYTranslator, const Eigen::MatrixXi& coarsep2pmap, const Eigen::MatrixXi& IXf2c, const Eigen::MatrixXi& IYf2c) {
-    Eigen::MatrixX<bool> p2pmatrix(std::max(coarsep2pmap.col(0).maxCoeff(), IXf2c.maxCoeff())+1,
-                                   std::max(coarsep2pmap.col(1).maxCoeff(), IYf2c.maxCoeff())+1);
-    for (int i = 0; i < p2pmatrix.rows(); i++) {
-        for (int j = 0; j < p2pmatrix.cols(); j++) {
-            p2pmatrix(i, j) = false;
-        }
-    }
-    //p2pmatrix.setZero();
-    // init p2p matrix
-    for (int i = 0; i < coarsep2pmap.rows(); i++) {
-        p2pmatrix(coarsep2pmap(i, 0), coarsep2pmap(i, 1)) = true;
-    }
+void pruneEdgeProductSpace(Eigen::MatrixXi& E, Eigen::MatrixXi& eToEXTranslator, Eigen::MatrixXi& eToEYTranslator, const Eigen::MatrixXi& coarsep2pmap, const Eigen::MatrixXi& IXf2c, const Eigen::MatrixXi& IYf2c, Shape shapeX, Shape shapeY) {
+
+
+    const Eigen::MatrixX<bool> p2pmatrix = utils::computeP2PMat(shapeX, shapeY, coarsep2pmap, IXf2c, IYf2c, 2);
 
     Eigen::MatrixXi prunedE(E.rows(), 4);
     Eigen::MatrixXi prunedEToEXTranslator(E.rows(), 1);
     Eigen::MatrixXi prunedEToEYTranslator(E.rows(), 1);
     long numE = 0;
     for (long e = 0; e < E.rows(); e++) {
-        const bool firstp2p = p2pmatrix( IXf2c(E(e, 0)), IYf2c(E(e, 2)) );
-        const bool seconp2p = p2pmatrix( IXf2c(E(e, 1)), IYf2c(E(e, 3)) );
-        const bool thirdp2p = p2pmatrix( IXf2c(E(e, 0)), IYf2c(E(e, 3)) );
-        const bool fourthp2p = p2pmatrix( IXf2c(E(e, 1)), IYf2c(E(e, 2)) );
+        const bool firstp2p = p2pmatrix( E(e, 0), E(e, 2) );
+        const bool seconp2p = p2pmatrix( E(e, 1), E(e, 3) );
+        const bool thirdp2p = p2pmatrix( E(e, 0), E(e, 3) );
+        const bool fourthp2p = p2pmatrix( E(e, 1), E(e, 2) );
         if (firstp2p || seconp2p || thirdp2p || fourthp2p) {
             prunedE(numE, Eigen::all) = E(e, Eigen::all);
             prunedEToEXTranslator(numE, 0) = eToEXTranslator(e, 0);
@@ -336,7 +327,7 @@ void Constraints::getDelOptimizedPRUNED(std::vector<TripletInt8>& delEntries, co
     Eigen::MatrixXi LocEYinFY = shapeY.getLocEinF();
     Eigen::MatrixXi eToEXTranslator = constructEtoEdgesXTranslator();
     Eigen::MatrixXi eToEYTranslator = constructEtoEdgesYTranslator();
-    pruneEdgeProductSpace(E, eToEXTranslator, eToEYTranslator, coarsep2pmap, IXf2c, IYf2c);
+    pruneEdgeProductSpace(E, eToEXTranslator, eToEYTranslator, coarsep2pmap, IXf2c, IYf2c, shapeX, shapeY);
     numProductEdges = E.rows();
 
     // find num nondeg and num deg
