@@ -8,6 +8,7 @@
 #include <Eigen/Dense>
 #include <math.h>
 #include "utils.hpp"
+#include <igl/adjacency_list.h>
 
 namespace utils {
 
@@ -78,6 +79,62 @@ Eigen::MatrixXi linspaced(int start, int end, int step) {
         A(i, 0) = start + i * step;
     }
     return A;
+}
+
+
+Eigen::MatrixX<bool> computeP2PMat(Shape& shapeX,
+                                   Shape& shapeY,
+                                   const Eigen::MatrixXi& coarsep2pmap,
+                                   const Eigen::MatrixXi& IXf2c,
+                                   const Eigen::MatrixXi& IYf2c,
+                                   const int c2fNeighborhood) {
+
+    Eigen::MatrixX<bool> p2pMatCoarse(std::max(coarsep2pmap.col(0).maxCoeff(), IXf2c.maxCoeff())+1,
+                                      std::max(coarsep2pmap.col(1).maxCoeff(), IYf2c.maxCoeff())+1);
+    p2pMatCoarse.setZero();
+    // init p2p matrix
+    for (int i = 0; i < coarsep2pmap.rows(); i++) {
+        p2pMatCoarse(coarsep2pmap(i, 0), coarsep2pmap(i, 1)) = 1;
+    }
+
+    std::vector<std::vector<int>> adjX, adjY;
+    igl::adjacency_list(shapeX.getF(), adjX);
+    igl::adjacency_list(shapeY.getF(), adjY);
+    Eigen::MatrixX<bool> p2pMatFine(shapeX.getNumVertices(), shapeY.getNumVertices());
+    p2pMatFine.setZero();
+    for (int vx = 0; vx < p2pMatFine.rows(); vx++) {
+        for (int vy = 0; vy < p2pMatFine.cols(); vy++) {
+            bool set2one = false;
+            set2one = p2pMatCoarse(IXf2c(vx), IYf2c(vy));
+            if (!set2one) {
+                // if not already setting to one we check one ring neighborhood
+                if (c2fNeighborhood > 0) {
+                    for (auto vxx: adjX.at(vx)) {
+                        set2one = set2one || p2pMatCoarse(IXf2c(vxx), IYf2c(vy));
+                        if (set2one) break;
+                        if (c2fNeighborhood > 1) {
+                            for (auto vxxx: adjX.at(vxx)) {
+                                set2one = set2one || p2pMatCoarse(IXf2c(vxxx), IYf2c(vy));
+                                if (set2one) break;
+                            }
+                        }
+                    }
+
+                    for (auto vyy: adjY.at(vy)) {
+                        set2one = set2one || p2pMatCoarse(IXf2c(vx), IYf2c(vyy));
+                        if (set2one) break;
+                        if (c2fNeighborhood > 1) {
+                            for (auto vyyy: adjY.at(vyy)) {
+                                set2one = set2one ||p2pMatCoarse(IXf2c(vx), IYf2c(vyyy));
+                                if (set2one) break;
+                            }
+                        }
+                    }
+                }
+            }
+            p2pMatFine(vx, vy) = set2one;
+        }
+    }
 }
 
 } // namespace utils

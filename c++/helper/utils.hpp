@@ -14,6 +14,7 @@
 #include <iostream>
 #include <Eigen/Dense>
 #include <fstream>
+#include "helper/shape.hpp"
 
 #define ASSERT_NEVER_REACH assert(false)
 #define FLOAT_EPSI 1e-7
@@ -181,6 +182,13 @@ int numElemEqualTo(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> &matri
     }
     return numElemEqual;
 }
+
+Eigen::MatrixX<bool> computeP2PMat(Shape& shapeX,
+                                   Shape& shapeY,
+                                   const Eigen::MatrixXi& coarsep2pmap,
+                                   const Eigen::MatrixXi& IXf2c,
+                                   const Eigen::MatrixXi& IYf2c,
+                                   const int c2fNeighborhood);
 
 } // namespace utils
 
