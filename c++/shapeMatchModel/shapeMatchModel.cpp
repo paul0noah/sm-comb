@@ -17,6 +17,7 @@
 #include <chrono>
 #include <filesystem>
 #include <algorithm>
+#define DEBUG_PRUNING false
 
 
 bool ShapeMatchModel::checkWatertightness() {
@@ -167,6 +168,20 @@ c2fNeighborhood(1) {
 
     if (opts.verbose) std::cout << "[ShapeMM]   > Constraints" << std::endl;
     constr.computePrunedConstraints(PruneVec, coarsep2pmap, IXf2c, IYf2c);
+    if (DEBUG_PRUNING) {
+        std::cout << "      Debugging Pruning..." << std::endl;
+        Constraints tempConstr = Constraints(shapeX, shapeY, combos);
+        tempConstr.getConstraintMatrix();
+        tempConstr.prune(PruneVec);
+        auto Atemp = tempConstr.getConstraintMatrix();
+        auto A =    constr.getConstraintMatrix();
+        std::cout << "A " << (Atemp - A).norm() << std::endl;
+
+        auto RHStemp = tempConstr.getConstraintVector();
+        auto RHS =    constr.getConstraintVector();
+        std::cout << "RHS " << (RHS - RHStemp).norm() << std::endl;
+    }
+
 
     std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
     if (opts.verbose) std::cout << "[ShapeMM]   Done (" << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count() << "  [ms])" << std::endl;
