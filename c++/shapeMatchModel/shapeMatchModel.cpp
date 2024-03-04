@@ -175,11 +175,11 @@ c2fNeighborhood(1) {
         tempConstr.prune(PruneVec);
         auto Atemp = tempConstr.getConstraintMatrix();
         auto A =    constr.getConstraintMatrix();
-        std::cout << "A " << (Atemp - A).norm() << std::endl;
+        std::cout << "A " << (Atemp.cast<int>() - A.cast<int>()).norm() << std::endl;
 
         auto RHStemp = tempConstr.getConstraintVector();
         auto RHS =    constr.getConstraintVector();
-        std::cout << "RHS " << (RHS - RHStemp).norm() << std::endl;
+        std::cout << "RHS " << (RHS.cast<int>() - RHStemp.cast<int>()).norm() << std::endl;
     }
 
 
