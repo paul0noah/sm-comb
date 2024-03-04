@@ -135,6 +135,7 @@ Eigen::MatrixX<bool> computeP2PMat(Shape& shapeX,
             p2pMatFine(vx, vy) = set2one;
         }
     }
+    return p2pMatFine;
 }
 
 } // namespace utils
