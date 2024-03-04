@@ -122,6 +122,14 @@ ShapeMatchModel::ShapeMatchModel(Shape &sX, Shape & sY, ShapeMatchModelOpts opts
         opts = optsIn;
 }
 
+ShapeMatchModel::ShapeMatchModel(Eigen::MatrixXi FX, Eigen::MatrixXf VX, Eigen::MatrixXi FY, Eigen::MatrixXf VY, Eigen::MatrixXi coarsep2pmap, Eigen::MatrixXi IXf2c, Eigen::MatrixXi IYf2c, int c2fneighborhood) :
+        ShapeMatchModel(FX, VX, FY, VY, coarsep2pmap, IXf2c, IYf2c) {
+    c2fNeighborhood = c2fneighborhood;
+    if (c2fneighborhood > 2) {
+        if (opts.verbose) std::cout << "[ShapeMM] Warning: c2fneighborhood > 2 not supported. falling back to 2." << std::endl;
+    }
+}
+
 ShapeMatchModel::ShapeMatchModel(Eigen::MatrixXi FX, Eigen::MatrixXf VX, Eigen::MatrixXi FY, Eigen::MatrixXf VY, Eigen::MatrixXi coarsep2pmap, Eigen::MatrixXi IXf2c, Eigen::MatrixXi IYf2c) :
 shapeX(Shape(VX, FX)),
 shapeY(Shape(VY, FY)),
@@ -131,7 +139,8 @@ deformationEnergy(shapeX, shapeY, combos),
 ilpGenerated(false),
 minMarginals(combos.getFaCombo().rows(), 1),
 minMarginalsComputed(false),
-bddsolver(NULL) {
+bddsolver(NULL),
+c2fNeighborhood(1) {
 
     ilp = LPMP::ILP_input();
     pruned = true;
@@ -601,12 +610,27 @@ Eigen::VectorX<bool> ShapeMatchModel::getPruneVec(Eigen::MatrixXi& coarsep2pmap,
             set2one = p2pMatCoarse(IXf2c(vx), IYf2c(vy));
             if (!set2one) {
                 // if not already setting to one we check one ring neighborhood
-                for (auto vxx: adjX.at(vx)) {
-                    set2one = set2one || p2pMatCoarse(IXf2c(vxx), IYf2c(vy));
-                }
-                if (!set2one) {
+                if (c2fNeighborhood > 0) {
+                    for (auto vxx: adjX.at(vx)) {
+                        set2one = set2one || p2pMatCoarse(IXf2c(vxx), IYf2c(vy));
+                        if (set2one) break;
+                        if (c2fNeighborhood > 1) {
+                            for (auto vxxx: adjX.at(vxx)) {
+                                set2one = set2one || p2pMatCoarse(IXf2c(vxxx), IYf2c(vy));
+                                if (set2one) break;
+                            }
+                        }
+                    }
+
                     for (auto vyy: adjY.at(vy)) {
                         set2one = set2one || p2pMatCoarse(IXf2c(vx), IYf2c(vyy));
+                        if (set2one) break;
+                        if (c2fNeighborhood > 1) {
+                            for (auto vyyy: adjY.at(vyy)) {
+                                set2one = set2one ||p2pMatCoarse(IXf2c(vx), IYf2c(vyyy));
+                                if (set2one) break;
+                            }
+                        }
                     }
                 }
             }
