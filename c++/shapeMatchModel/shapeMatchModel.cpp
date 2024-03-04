@@ -11,6 +11,7 @@
 #include <iostream>
 #include <cstdio>
 #include <igl/find.h>
+#include <igl/adjacency_list.h>
 #include <min_marginal_utils.h>
 #include "helper/utils.hpp"
 #include <chrono>
@@ -581,32 +582,52 @@ Eigen::VectorX<bool> ShapeMatchModel::getPruneVec(Eigen::MatrixXi& coarsep2pmap,
     const Eigen::MatrixXi FXCombo = getCombinations().getFaCombo();
     const Eigen::MatrixXi FYCombo = getCombinations().getFbCombo();
 
-    Eigen::MatrixX<bool> p2pmatrix(std::max(coarsep2pmap.col(0).maxCoeff(), IXf2c.maxCoeff())+1,
-                                   std::max(coarsep2pmap.col(1).maxCoeff(), IYf2c.maxCoeff())+1);
-    for (int i = 0; i < p2pmatrix.rows(); i++) {
-        for (int j = 0; j < p2pmatrix.cols(); j++) {
-            p2pmatrix(i, j) = false;
-        }
-    }
-    p2pmatrix.setZero();
+    Eigen::MatrixX<bool> p2pMatCoarse(std::max(coarsep2pmap.col(0).maxCoeff(), IXf2c.maxCoeff())+1,
+                                      std::max(coarsep2pmap.col(1).maxCoeff(), IYf2c.maxCoeff())+1);
+    p2pMatCoarse.setZero();
     // init p2p matrix
     for (int i = 0; i < coarsep2pmap.rows(); i++) {
-        p2pmatrix(coarsep2pmap(i, 0), coarsep2pmap(i, 1)) = 1;
+        p2pMatCoarse(coarsep2pmap(i, 0), coarsep2pmap(i, 1)) = 1;
     }
 
+    std::vector<std::vector<int>> adjX, adjY;
+    igl::adjacency_list(shapeX.getF(), adjX);
+    igl::adjacency_list(shapeY.getF(), adjY);
+    Eigen::MatrixX<bool> p2pMatFine(shapeX.getNumVertices(), shapeY.getNumVertices());
+    p2pMatFine.setZero();
+    for (int vx = 0; vx < p2pMatFine.rows(); vx++) {
+        for (int vy = 0; vy < p2pMatFine.cols(); vy++) {
+            bool set2one = false;
+            set2one = p2pMatCoarse(IXf2c(vx), IYf2c(vy));
+            if (!set2one) {
+                // if not already setting to one we check one ring neighborhood
+                for (auto vxx: adjX.at(vx)) {
+                    set2one = set2one || p2pMatCoarse(IXf2c(vxx), IYf2c(vy));
+                }
+                if (!set2one) {
+                    for (auto vyy: adjY.at(vy)) {
+                        set2one = set2one || p2pMatCoarse(IXf2c(vx), IYf2c(vyy));
+                    }
+                }
+            }
+            p2pMatFine(vx, vy) = set2one;
+        }
+    }
+
+    // actually creating the pruning vector
     Eigen::VectorX<bool> PruneVec(FXCombo.rows());
     for (long f = 0; f < FXCombo.rows(); f++) {
-        const bool firstp2p = p2pmatrix( IXf2c(FXCombo(f, 0)), IYf2c(FYCombo(f, 0)) );
-        const bool seconp2p = p2pmatrix( IXf2c(FXCombo(f, 1)), IYf2c(FYCombo(f, 1)) );
-        const bool thirdp2p = p2pmatrix( IXf2c(FXCombo(f, 2)), IYf2c(FYCombo(f, 2)) );
+        const bool firstp2p = p2pMatFine( FXCombo(f, 0), FYCombo(f, 0) );
+        const bool seconp2p = p2pMatFine( FXCombo(f, 1), FYCombo(f, 1) );
+        const bool thirdp2p = p2pMatFine( FXCombo(f, 2), FYCombo(f, 2) );
 
-        const bool p2p4 = p2pmatrix( IXf2c(FXCombo(f, 0)), IYf2c(FYCombo(f, 1)) );
-        const bool p2p5 = p2pmatrix( IXf2c(FXCombo(f, 1)), IYf2c(FYCombo(f, 2)) );
-        const bool p2p6 = p2pmatrix( IXf2c(FXCombo(f, 2)), IYf2c(FYCombo(f, 0)) );
+        const bool p2p4 = p2pMatFine( FXCombo(f, 0), FYCombo(f, 1) );
+        const bool p2p5 = p2pMatFine( FXCombo(f, 1), FYCombo(f, 2) );
+        const bool p2p6 = p2pMatFine( FXCombo(f, 2), FYCombo(f, 0) );
 
-        const bool p2p7 = p2pmatrix( IXf2c(FXCombo(f, 0)), IYf2c(FYCombo(f, 2)) );
-        const bool p2p8 = p2pmatrix( IXf2c(FXCombo(f, 1)), IYf2c(FYCombo(f, 0)) );
-        const bool p2p9 = p2pmatrix( IXf2c(FXCombo(f, 2)), IYf2c(FYCombo(f, 1)) );
+        const bool p2p7 = p2pMatFine( FXCombo(f, 0), FYCombo(f, 2) );
+        const bool p2p8 = p2pMatFine( FXCombo(f, 1), FYCombo(f, 0) );
+        const bool p2p9 = p2pMatFine( FXCombo(f, 2), FYCombo(f, 1) );
 
         if (firstp2p || seconp2p || thirdp2p || p2p4 || p2p5 || p2p6 || p2p7 || p2p8 || p2p9) {
             PruneVec(f) = true;
