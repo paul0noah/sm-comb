@@ -45,7 +45,10 @@ PYBIND11_MODULE(shape_match_model_pb, handle) {
     smm.def("getEnergyVector", &ShapeMatchModel::getEforPython);
     smm.def("getRHSVector", &ShapeMatchModel::getRHSforPython);
     smm.def("getAMatrix", &ShapeMatchModel::getAforPython);
-
+    smm.def("getEdgeTriangleAdjacencyX", &ShapeMatchModel::getEdgeTriangleAdjacencyX);
+    smm.def("getEdgeTriangleAdjacencyY", &ShapeMatchModel::getEdgeTriangleAdjacencyY);
+    smm.def("getEdgesX", &ShapeMatchModel::getEdgesX);
+    smm.def("getEdgesY", &ShapeMatchModel::getEdgesY);
 
     py::class_<LPMP::ILP_input>(handle, "ILP_instance")
         .def(py::init<>());

@@ -136,6 +136,10 @@ public:
     Eigen::MatrixXf getEforPython();
     Eigen::MatrixX<int8_t> getRHSforPython();
     std::tuple<Eigen::MatrixXi, Eigen::MatrixXi, Eigen::MatrixX<int8_t>> getAforPython();
+    Eigen::MatrixXi getEdgeTriangleAdjacencyY();
+    Eigen::MatrixXi getEdgeTriangleAdjacencyX();
+    Eigen::MatrixXi getEdgesX();
+    Eigen::MatrixXi getEdgesY();
 };
 
 #endif /* ShapeMatchModel_hpp */

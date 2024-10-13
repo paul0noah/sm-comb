@@ -854,6 +854,22 @@ Eigen::MatrixXi& ShapeMatchModel::getFbCombo() {
     return combos.getFbCombo();
 }
 
+Eigen::MatrixXi ShapeMatchModel::getEdgeTriangleAdjacencyX() {
+    return shapeX.getLocEinF();
+}
+
+Eigen::MatrixXi ShapeMatchModel::getEdgeTriangleAdjacencyY() {
+    return shapeY.getLocEinF();
+}
+
+Eigen::MatrixXi ShapeMatchModel::getEdgesX(){
+    return shapeX.getE();
+}
+
+Eigen::MatrixXi ShapeMatchModel::getEdgesY(){
+    return shapeY.getE();
+}
+
 float ShapeMatchModel::getLowerBound() {
     return initialLowerBound;
 }
