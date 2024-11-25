@@ -5,6 +5,7 @@ add_subdirectory(energyComputation)
 target_sources(${PROJECT_NAME} 
 				PRIVATE
 					shapeMatchModel.cpp
+					shapeMatchModelHelpers.cpp
 					shapeMatchModel.hpp
 					primalHeuristic.cpp
 					primalHeuristicInitialization.cpp
