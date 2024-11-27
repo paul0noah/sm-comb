@@ -65,7 +65,14 @@ private:
     Eigen::MatrixXi constructEdgeProductSpace(int &rowsE);
     SparseMatInt8 getDel();
     SparseMatInt8 getDelOptimized();
+    void getDelOptimizedwithPruneVec(std::vector<TripletInt8>& delEntries, const Eigen::VectorX<bool>& pruneVec, Eigen::MatrixXi& E, Eigen::MatrixXi& eToEXTranslator, Eigen::MatrixXi& eToEYTranslator);
     void getDelOptimizedPRUNED(std::vector<TripletInt8>& delEntries, const Eigen::VectorX<bool>& pruneVec, const Eigen::MatrixXi& coarsep2pmap, const Eigen::MatrixXi& IXf2c, const Eigen::MatrixXi& IYf2c);
+    long getDelOptimizedBoundary(std::vector<TripletInt8>& delEntries,
+                                 const Eigen::VectorX<bool>& pruneVec,
+                                 const Eigen::MatrixXi& boundaryMatching,
+                                 const int nFXHoles,
+                                 const int nFYHoles,
+                                 std::vector<std::tuple<int, int>>& boundaryConstraints);
     
     // helper functions for getDelOptimized
     Eigen::MatrixXi constructEtoEdgesXTranslator();
@@ -83,18 +90,19 @@ private:
     void searchDegEdgesInEdges2Triangle(std::vector<TripletInt8> &delEntries, Eigen::MatrixXi &E, int e, Eigen::MatrixXi &LocEYinFY, Eigen::MatrixXi &eToEXTranslator, Eigen::MatrixXi &eToEYTranslator, Shape &shape, int numEX, int numFX, int numEY, int numFY, int offset);
     void searchDegEdgesInEdges2TrianglePRUNED(const Eigen::VectorX<bool>& pruneVec, const Eigen::VectorX<long>& cumSumPruneVec, std::vector<TripletInt8> &delEntries, Eigen::MatrixXi &E, int e, Eigen::MatrixXi &LocEYinFY, Eigen::MatrixXi &eToEXTranslator, Eigen::MatrixXi &eToEYTranslator, Shape &shape, int numEX, int numFX, int numEY, int numFY, int offset);
     // end of helper functions
-    
-    SparseMatInt8 getProjection();
+
     void computeConstraintVector();
     void computeConstraints();
     
 public:
     void init();
+    SparseMatInt8 getProjection();
     Constraints(Shape &sX, Shape &sY, Combinations& c);
     SparseMatInt8 getConstraintMatrix();
     SparseVecInt8 getConstraintVector();
     void prune(const Eigen::VectorX<bool>& pruneVec);
     void computePrunedConstraints(const Eigen::VectorX<bool>& pruneVec, const Eigen::MatrixXi& coarsep2pmap, const Eigen::MatrixXi& IXf2c, const Eigen::MatrixXi& IYf2c);
+    void computeConstraintsForBoundaryMatching(const Eigen::VectorX<bool>& pruneVec, const Eigen::MatrixXi& boundaryMatching, const int nFXHoles, const int nFYHoles);
     
 };
 #endif /* constraints_hpp */

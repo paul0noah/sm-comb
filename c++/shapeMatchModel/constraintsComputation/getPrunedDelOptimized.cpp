@@ -12,6 +12,7 @@
 #include "Eigen/Sparse"
 #include <iostream>
 #include <igl/cumsum.h>
+#include <tsl/robin_set.h>
 #if defined(_OPENMP)
     #include <omp.h>
 #else
@@ -232,8 +233,14 @@ void Constraints::searchInNonDegenerateFacesPRUNED(const Eigen::VectorX<bool>& p
     }
 }
 
-void pruneEdgeProductSpace(Eigen::MatrixXi& E, Eigen::MatrixXi& eToEXTranslator, Eigen::MatrixXi& eToEYTranslator, const Eigen::MatrixXi& coarsep2pmap, const Eigen::MatrixXi& IXf2c, const Eigen::MatrixXi& IYf2c, Shape shapeX, Shape shapeY) {
-
+void pruneEdgeProductSpace(Eigen::MatrixXi& E,
+                           Eigen::MatrixXi& eToEXTranslator,
+                           Eigen::MatrixXi& eToEYTranslator,
+                           const Eigen::MatrixXi& coarsep2pmap,
+                           const Eigen::MatrixXi& IXf2c,
+                           const Eigen::MatrixXi& IYf2c,
+                           Shape shapeX,
+                           Shape shapeY) {
 
     const Eigen::MatrixX<bool> p2pmatrix = utils::computeP2PMat(shapeX, shapeY, coarsep2pmap, IXf2c, IYf2c, 2);
 
@@ -316,18 +323,17 @@ void pruneEdgeProductSpace(Eigen::MatrixXi& E, Eigen::MatrixXi& eToEXTranslator,
  % combing the information of the location of the edges we can reduce the
  % complexity of the getDel function to O(numProductFaces)
  */
-void Constraints::getDelOptimizedPRUNED(std::vector<TripletInt8>& delEntries, const Eigen::VectorX<bool>& pruneVec, const Eigen::MatrixXi& coarsep2pmap, const Eigen::MatrixXi& IXf2c, const Eigen::MatrixXi& IYf2c) {
+void Constraints::getDelOptimizedwithPruneVec(std::vector<TripletInt8>& delEntries,
+                                              const Eigen::VectorX<bool>& pruneVec,
+                                              Eigen::MatrixXi& E,
+                                              Eigen::MatrixXi& eToEXTranslator,
+                                              Eigen::MatrixXi& eToEYTranslator) {
     
     int rowsE;
     Eigen::VectorX<long> cumSumPruneVec;
     igl::cumsum(pruneVec.cast<long>(), 1, cumSumPruneVec);
-    Eigen::MatrixXi E;
-    E = constructEdgeProductSpace(rowsE);
     Eigen::MatrixXi LocEXinFX = shapeX.getLocEinF();
     Eigen::MatrixXi LocEYinFY = shapeY.getLocEinF();
-    Eigen::MatrixXi eToEXTranslator = constructEtoEdgesXTranslator();
-    Eigen::MatrixXi eToEYTranslator = constructEtoEdgesYTranslator();
-    pruneEdgeProductSpace(E, eToEXTranslator, eToEYTranslator, coarsep2pmap, IXf2c, IYf2c, shapeX, shapeY);
     numProductEdges = E.rows();
 
     // find num nondeg and num deg
@@ -420,4 +426,219 @@ void Constraints::getDelOptimizedPRUNED(std::vector<TripletInt8>& delEntries, co
         delEntries.insert(delEntries.end(), delEntriesPriv.begin(), delEntriesPriv.end());
         
     }
+}
+
+
+void Constraints::getDelOptimizedPRUNED(std::vector<TripletInt8>& delEntries, const Eigen::VectorX<bool>& pruneVec, const Eigen::MatrixXi& coarsep2pmap, const Eigen::MatrixXi& IXf2c, const Eigen::MatrixXi& IYf2c) {
+
+    int rowsE;
+    Eigen::MatrixXi E = constructEdgeProductSpace(rowsE);
+    Eigen::MatrixXi eToEXTranslator = constructEtoEdgesXTranslator();
+    Eigen::MatrixXi eToEYTranslator = constructEtoEdgesYTranslator();
+    pruneEdgeProductSpace(E, eToEXTranslator, eToEYTranslator, coarsep2pmap, IXf2c, IYf2c, shapeX, shapeY);
+
+    getDelOptimizedwithPruneVec(delEntries, pruneVec, E, eToEXTranslator, eToEYTranslator);
+
+}
+
+
+/*
+
+
+
+ BoundaryCode
+
+
+
+
+ */
+
+struct EDG {
+    int idx0;
+    int idx1;
+    EDG () {}
+    EDG (int iidx0, int iidx1) {
+        idx0 = iidx0;
+        idx1 = iidx1;
+    }
+    EDG operator-() const {
+        EDG minusEDG;
+        minusEDG.idx0 = idx1;
+        minusEDG.idx1 = idx0;
+        return minusEDG;
+    }
+    bool operator==(const EDG& edg) const {
+        return (idx0 == edg.idx0) && (idx1 == edg.idx1);
+    }
+};
+struct PEDG {
+    int idx0;
+    int idx1;
+    int idy0;
+    int idy1;
+    PEDG () {}
+    PEDG (int iidx0, int iidx1, int iidy0, int iidy1) {
+        idx0 = iidx0;
+        idx1 = iidx1;
+        idy0 = iidy0;
+        idy1 = iidy1;
+    }
+    bool operator==(const PEDG& edg) const {
+        return (idx0 == edg.idx0) && (idx1 == edg.idx1) && (idy0 == edg.idy0) && (idy1 == edg.idy1);
+    }
+};
+namespace std {
+    template<> struct hash<EDG> {
+        std::size_t operator()(EDG const& edg) const noexcept {
+            int k1 = edg.idx0;
+            int k2 = edg.idx1;
+            return (k1 + k2 ) * (k1 + k2 + 1) / 2 + k2;
+        }
+    };
+    template<> struct equal_to<EDG>{
+        constexpr bool operator()(const EDG &lhs, const EDG &rhs) const {
+            return  lhs == rhs;
+        }
+    };
+    template<> struct hash<PEDG> {
+        std::size_t operator()(PEDG const& edg) const noexcept {
+            int k1 = edg.idx0;
+            int k2 = edg.idx1;
+            int k3 = edg.idy0;
+            int k4 = edg.idy1;
+            return (k1 + k2 ) * (k1 + k2 + 1) / 2 + k2 + (k3 + k4 ) * (k3 + k4 + 1) / 2 + k4;
+        }
+    };
+    template<> struct equal_to<PEDG>{
+        constexpr bool operator()(const PEDG &lhs, const PEDG &rhs) const {
+            return lhs == rhs;
+        }
+    };
+}
+
+bool findEDG(const tsl::robin_set<EDG> &ELookup, const EDG &edg) {
+    const auto it = ELookup.find(edg);
+    if (it != ELookup.end())
+        return true;
+    return false;
+}
+bool findPEdge(const tsl::robin_set<PEDG> &ELookup, const PEDG &edg) {
+    const auto it = ELookup.find(edg);
+    if (it != ELookup.end())
+        return true;
+    return false;
+}
+
+tsl::robin_set<EDG> findDummyAndBoundaryEdges(Shape& shapeX, const int nFXHoles) {
+    tsl::robin_set<EDG> dummyEdgesX;
+    const Eigen::MatrixXi FX = shapeX.getF();
+    for (int i = nFXHoles; i < shapeX.getNumFaces(); i++) { // this loop follows convention how the product space is built up
+        const EDG e0_0 = EDG(FX(i, 0), FX(i, 1));
+        const EDG e0_1 = EDG(FX(i, 1), FX(i, 2));
+        const EDG e0_2 = EDG(FX(i, 2), FX(i, 0));
+
+        // one of the edges must be in next triangle
+        const EDG e1_0 = EDG(FX(i, 1), FX(i, 0));
+        const EDG e1_1 = EDG(FX(i, 2), FX(i, 1));
+        const EDG e1_2 = EDG(FX(i, 0), FX(i, 2));
+
+        dummyEdgesX.insert(e0_0);
+        dummyEdgesX.insert(e1_0);
+        dummyEdgesX.insert(e0_1);
+        dummyEdgesX.insert(e1_1);
+        dummyEdgesX.insert(e0_2);
+        dummyEdgesX.insert(e1_2);
+    }
+    return dummyEdgesX;
+}
+
+void pruneEdgeProductSpaceWithBoundary(Eigen::MatrixXi& E,
+                                       const Eigen::MatrixXi& boundaryMatching,
+                                       Eigen::MatrixXi& eToEXTranslator,
+                                       Eigen::MatrixXi& eToEYTranslator,
+                                       const int nFXHoles,
+                                       const int nFYHoles,
+                                       std::vector<std::tuple<int, int>>& boundaryConstraints,
+                                       Shape shapeX,
+                                       Shape shapeY) {
+    // compute boundary product edges
+    Eigen::MatrixXi boundaryProductEdges(boundaryMatching.rows()-1, 4); boundaryProductEdges.setConstant(-1);
+    tsl::robin_set<PEDG> boundaryProductEdgesHashMap, invboundaryProductEdgesHashMap;
+    for (int i = 0; i < boundaryProductEdges.rows(); i++) {
+        boundaryProductEdges.row(i) << boundaryMatching(i, 0), boundaryMatching(i+1, 0), boundaryMatching(i, 1), boundaryMatching(i+1, 1);
+        boundaryProductEdgesHashMap.insert(    PEDG(boundaryProductEdges(i, 0), boundaryProductEdges(i, 1), boundaryProductEdges(i, 2), boundaryProductEdges(i, 3)) );
+        invboundaryProductEdgesHashMap.insert( PEDG(boundaryProductEdges(i, 1), boundaryProductEdges(i, 0), boundaryProductEdges(i, 3), boundaryProductEdges(i, 2)) );
+    }
+    if ((boundaryProductEdges.array() == -1).any()) {
+        std::cout << "ERROR: did not add as many boundary matchings as expected" << std::endl;
+    }
+
+    // find dummy edges
+    const tsl::robin_set<EDG> dummyEdgesX = findDummyAndBoundaryEdges(shapeX, nFXHoles);
+    const tsl::robin_set<EDG> dummyEdgesY = findDummyAndBoundaryEdges(shapeY, nFYHoles);
+
+
+    Eigen::MatrixXi prunedE(E.rows(), 4);
+    Eigen::MatrixXi prunedEToEXTranslator(E.rows(), 1);
+    Eigen::MatrixXi prunedEToEYTranslator(E.rows(), 1);
+    long numE = 0;
+    for (long e = 0; e < E.rows(); e++) {
+        bool prune = false;
+
+        const EDG ex(E(e, 0), E(e, 1));
+        const EDG ey(E(e, 2), E(e, 3));
+
+        // prune away edges of dummy triangles and  // lets skip this: prune all product edges which involve boundary edges but NOT boundary matchings
+        const bool exIsBoundaryEdge = findEDG(dummyEdgesX, ex);
+        const bool eyIsBoundaryEdge = findEDG(dummyEdgesY, ey);
+        if (!(exIsBoundaryEdge && eyIsBoundaryEdge)) {
+            prune = true;
+        }
+
+        // setboundaryConstraints rhs
+        if (!prune) {
+            const PEDG pe(E(e, 0), E(e, 1), E(e, 2), E(e, 3));
+            if (findPEdge(boundaryProductEdgesHashMap, pe)) {
+                boundaryConstraints.push_back(std::make_tuple(numE, 1)); // first orientation of product edge will be used as +1 in del operator => rhs must be 1
+            }
+            else if (findPEdge(invboundaryProductEdgesHashMap, pe)) {
+                boundaryConstraints.push_back(std::make_tuple(numE, -1)); // second orientation of product edge will be used as -1 in del operator => rhs must be 1
+            }
+        }
+
+
+        if (!prune) {
+            prunedE(numE, Eigen::all) = E(e, Eigen::all);
+            prunedEToEXTranslator(numE, 0) = eToEXTranslator(e, 0);
+            prunedEToEYTranslator(numE, 0) = eToEYTranslator(e, 0);
+            numE++;
+        }
+    }
+
+
+    // overwrite existing matrices
+    prunedE.conservativeResize(numE, 4);
+    E = prunedE;
+    prunedEToEXTranslator.conservativeResize(numE, 1);
+    eToEXTranslator = prunedEToEXTranslator;
+    prunedEToEYTranslator.conservativeResize(numE, 1);
+    eToEYTranslator = prunedEToEYTranslator;
+}
+
+long Constraints::getDelOptimizedBoundary(std::vector<TripletInt8>& delEntries,
+                                          const Eigen::VectorX<bool>& pruneVec,
+                                          const Eigen::MatrixXi& boundaryMatching,
+                                          const int nFXHoles,
+                                          const int nFYHoles,
+                                          std::vector<std::tuple<int, int>>& boundaryConstraints) {
+    int rowsE;
+    Eigen::MatrixXi E;
+    E = constructEdgeProductSpace(rowsE);
+    Eigen::MatrixXi eToEXTranslator = constructEtoEdgesXTranslator();
+    Eigen::MatrixXi eToEYTranslator = constructEtoEdgesYTranslator();
+
+    pruneEdgeProductSpaceWithBoundary(E, boundaryMatching, eToEXTranslator, eToEYTranslator, nFXHoles, nFYHoles, boundaryConstraints, shapeX, shapeY);
+
+    getDelOptimizedwithPruneVec(delEntries, pruneVec, E, eToEXTranslator, eToEYTranslator);
+    return E.rows();
 }

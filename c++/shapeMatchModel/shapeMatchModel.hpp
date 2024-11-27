@@ -98,6 +98,7 @@ public:
     ShapeMatchModel(Shape &sX, Shape & sY);
     ShapeMatchModel(Shape &sX, Shape & sY, ShapeMatchModelOpts optsIn);
     ShapeMatchModel(Eigen::MatrixXi FX, Eigen::MatrixXf VX, Eigen::MatrixXi FY, Eigen::MatrixXf VY);
+    ShapeMatchModel(Eigen::MatrixXi FX, Eigen::MatrixXf VX, Eigen::MatrixXi FY, Eigen::MatrixXf VY, Eigen::MatrixXi boundaryMatching);
     ShapeMatchModel(Eigen::MatrixXi FX, Eigen::MatrixXf VX, Eigen::MatrixXi FY, Eigen::MatrixXf VY, Eigen::MatrixXi coarsep2pmap, Eigen::MatrixXi IXf2c, Eigen::MatrixXi IYf2c);
     ShapeMatchModel(Eigen::MatrixXi FX, Eigen::MatrixXf VX, Eigen::MatrixXi FY, Eigen::MatrixXf VY, Eigen::MatrixXi coarsep2pmap, Eigen::MatrixXi IXf2c, Eigen::MatrixXi IYf2c, int c2fneighborhood);
     ShapeMatchModel(std::string filenameShapeX, std::string filenameShapeY);

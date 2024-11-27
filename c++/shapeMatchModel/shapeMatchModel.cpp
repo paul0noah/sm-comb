@@ -178,6 +178,102 @@ ShapeMatchModel::ShapeMatchModel(Eigen::MatrixXi FX, Eigen::MatrixXf VX, Eigen::
     generate();
 }
 
+
+ShapeMatchModel::ShapeMatchModel(Eigen::MatrixXi FX, Eigen::MatrixXf VX, Eigen::MatrixXi FY, Eigen::MatrixXf VY, Eigen::MatrixXi boundaryMatching) :
+shapeX(Shape(VX, FX)),
+shapeY(Shape(VY, FY)),
+combos(shapeX, shapeY),
+constr(shapeX, shapeY, combos),
+deformationEnergy(shapeX, shapeY, combos),
+ilpGenerated(false),
+minMarginals(combos.getFaCombo().rows(), 1),
+minMarginalsComputed(false),
+bddsolver(NULL) {
+
+    // check inputs
+    if (boundaryMatching.cols() != 2) {
+        std::cout << "[ShapeMM] Expecting boundary matching to be of size |num boundary matches| x 2 !" << std::endl;
+        return;
+    }
+    if (!utils::allEqual(boundaryMatching.row(0), boundaryMatching.row(boundaryMatching.rows()-1))) {
+        std::cout << "[ShapeMM] Expecting front and back of boundary matching to be all equal, i.e. first row to be equal to last row!" << std::endl;
+        return;
+    }
+
+    const bool sXwatertight = shapeX.isWatertight();
+    const bool sYwatertight = shapeY.isWatertight();
+    if (sXwatertight || sYwatertight) {
+        std::cout << "[ShapeMM] This constructor expects both shapes to have exactly one boundary. Input does not adhere to this which leads to undefined behavior." << std::endl;
+        return;
+    }
+
+    // close holes (this is somewhat a hack so that the inputs is compliant with everything else)
+    const bool useTriangleFan = true;
+    if (!nonWatertightMeshHandler.fillHoles(shapeX, shapeY, useTriangleFan)) {
+        std::cout << "[ShapeMM] Could not fill holes. This should not happen." << std::endl;
+        return;
+    }
+    combos.init();
+    constr.init();
+
+    // construct prune vec (prune hole closing triangles)
+    const SparseMatInt8 proj = constr.getProjection();
+    const int nProductFaces = combos.getFaCombo().rows();
+    Eigen::VectorX<bool> PruneVec(nProductFaces, 1); PruneVec.setOnes();
+
+    for (int x = nonWatertightMeshHandler.getShapeXWithHoles().getNumFaces(); x < shapeX.getNumFaces(); x++) {
+        for (typename Eigen::SparseMatrix<int8_t, Eigen::RowMajor>::InnerIterator it(proj, x); it; ++it) {
+            const int f = it.index();
+            PruneVec(f) = false;
+        }
+    }
+    for (int y = nonWatertightMeshHandler.getShapeYWithHoles().getNumFaces(); y < shapeY.getNumFaces(); y++) {
+        for (typename Eigen::SparseMatrix<int8_t, Eigen::RowMajor>::InnerIterator it(proj, y); it; ++it) {
+            const int f = it.index();
+            PruneVec(f) = false;
+        }
+    }
+    ilp = LPMP::ILP_input();
+    pruned = true;
+    initialLowerBound = -1;
+    generationSuccessfull = false;
+
+
+    if (opts.verbose) std::cout << "[ShapeMM] Generating Shape Match Model for boundary matching..." << std::endl;
+    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+    if (opts.verbose) std::cout << "[ShapeMM]   > Product Space" << std::endl;
+    combos.getFaCombo();
+    combos.prune(PruneVec);
+    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+    if (opts.verbose) std::cout << "[ShapeMM]   Done (" << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << "  [ms])" << std::endl;
+    if (opts.verbose) std::cout << "[ShapeMM]   > Energies" << std::endl;
+    if (opts.verbose) std::cout << "[ShapeMM]     => skipping (contact project owner if you need this)" << std::endl;
+    std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
+    if (opts.verbose) std::cout << "[ShapeMM]   Done (" << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count() << "  [ms])" << std::endl;
+
+    if (opts.verbose) std::cout << "[ShapeMM]   > Constraints" << std::endl;
+    constr.computeConstraintsForBoundaryMatching(PruneVec, boundaryMatching, nonWatertightMeshHandler.getShapeXWithHoles().getNumFaces(), nonWatertightMeshHandler.getShapeYWithHoles().getNumFaces());
+
+
+    std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
+    if (opts.verbose) std::cout << "[ShapeMM]   Done (" << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count() << "  [ms])" << std::endl;
+    if (opts.verbose) std::cout << "[ShapeMM] Done (" << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t1).count() << "  [ms])" << std::endl;
+    generationSuccessfull = true;
+
+    opts.useConstraintsGroups = false;
+
+    // TODO:
+    /*
+     - fill holes with triangle fans
+     - generate constraints
+     - remove hole filling product triangles
+     - remove triangles which cannot match accoding to boundaryMatching
+     - modify triangle projection constraints accordingly
+     - modify del constraints so that boundary matches exactly
+     */
+
+}
+
 ShapeMatchModel::ShapeMatchModel(std::string filenameShapeX, int numFacesX, std::string filenameShapeY, int numFacesY):
     shapeX(filenameShapeX, numFacesX),
     shapeY(filenameShapeY, numFacesY),

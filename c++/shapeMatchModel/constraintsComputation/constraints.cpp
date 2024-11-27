@@ -292,6 +292,60 @@ void Constraints::computePrunedConstraints(const Eigen::VectorX<bool>& pruneVec,
     computed = true;
 }
 
+void Constraints::computeConstraintsForBoundaryMatching(const Eigen::VectorX<bool>& pruneVec, const Eigen::MatrixXi& boundaryMatching, const int nFXHoles, const int nFYHoles) {
+
+
+    numProductFaces = FXCombo.rows();
+
+    std::vector<TripletInt8> constrEntries;
+    constrEntries.reserve(numProductFaces * 3 + numProductFaces * 2);
+
+
+    // del
+    std::vector<std::tuple<int, int>> boundaryConstraints;
+    numProductEdges = getDelOptimizedBoundary(constrEntries, pruneVec, boundaryMatching, nFXHoles, nFYHoles, boundaryConstraints);
+
+
+    // projection
+    SparseMatInt8 proj = getProjection();
+    Eigen::VectorX<long> cumSumPruneVec;
+    igl::cumsum(pruneVec.cast<long>(), 1, cumSumPruneVec);
+    numProjections = 0;
+    for (long e = 0; e < proj.outerSize(); ++e) {
+        bool newRow = false;
+        for (typename Eigen::SparseMatrix<int8_t, Eigen::RowMajor>::InnerIterator it(proj, e); it; ++it) {
+            const int f = it.index();
+            const int8_t val = it.value();
+            if (pruneVec(f)) {
+                newRow = true;
+                const int colidx = cumSumPruneVec(f) - 1;
+                constrEntries.push_back(TripletInt8(numProjections + numProductEdges, colidx, val));
+            }
+        }
+        if (newRow) numProjections++;
+    }
+
+
+    // create the matrix
+    constraintMatrix = SparseMatInt8(numProductEdges + numProjections, numProductFaces);
+    constraintMatrix.setFromTriplets(constrEntries.begin(), constrEntries.end());
+
+
+    // Constraints vector
+    constraintVector = SparseVecInt8(numProductEdges + numProjections);
+    constraintVector.reserve(numProjections + boundaryConstraints.size());
+    for (const auto tup : boundaryConstraints) {
+        const int idx = std::get<0>(tup);
+        const int val = std::get<1>(tup); // -1 or 1
+        constraintVector.insert(idx) = val;
+    }
+    for (int k = numProductEdges; k < numProductEdges + numProjections; k++) {
+        constraintVector.insert(k) = 1;
+    }
+
+    computed = true;
+}
+
 void Constraints::init() {
     numFacesX = shapeX.getNumFaces();
     numFacesY = shapeY.getNumFaces();
