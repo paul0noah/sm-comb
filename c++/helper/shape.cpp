@@ -10,6 +10,8 @@
 #include <igl/readOFF.h>
 #include <igl/decimate.h>
 #include <igl/qslim.h>
+#include <igl/boundary_loop.h>
+#include <igl/bfs_orient.h>
 #include "shape.hpp"
 #include "helper/utils.hpp"
 #include <iostream>
@@ -681,7 +683,7 @@ void Shape::plot(Eigen::MatrixXd clr, igl::opengl::glfw::Viewer &viewer, int vie
     // plot shape
     viewer.data(viewerDataIdx).set_mesh(V.cast<double>(), F);
     viewer.data(viewerDataIdx).set_face_based(true);
-    viewer.data(viewerDataIdx).set_colors(clr);
+    viewer.data(viewerDataIdx).set_data(clr);
 
     // plot open edges
     if (!isWatertight()) {
@@ -744,4 +746,41 @@ bool Shape::closeHoles(bool doSurfaceFairing) {
 
 bool Shape::closeHoles() {
     return closeHoles(false);
+}
+
+bool Shape::closeHolesWithTriFan() {
+    std::vector<size_t> boundary_loop;
+    igl::boundary_loop(F, boundary_loop);
+    assert(boundary_loop.size() > 3);
+    const int numNewFaces = F.rows() + boundary_loop.size() - 2;
+    Eigen::MatrixXi Fclosed(numNewFaces, 3); Fclosed.setConstant(-1);
+    Fclosed.block(0, 0, F.rows(), 3) = F;
+
+    if (boundary_loop.front() == boundary_loop.back()) {
+        std::cout << "Did not expect boundary loop to have front == back. PLs adjust code accordingly" << std::endl;
+    }
+    boundary_loop.push_back(boundary_loop.front());
+
+    int f = F.rows();
+    for (int i = 1; i < boundary_loop.size()-2; i++) {
+        Fclosed.row(f) << boundary_loop.at(0), boundary_loop.at(i), boundary_loop.at(i+1);
+        f++;
+    }
+
+    if ((Fclosed.array() == -1).any()) {
+        std::cout << "Did not use as many triangles to close holes as expected" << std::endl;
+    }
+
+    Eigen::MatrixXi componentIds(Fclosed.rows(), 1); componentIds.setZero();
+    igl::bfs_orient(Fclosed, Fclosed, componentIds);
+
+    F = Fclosed;
+    edgesComputed = false;
+    triangleNeighboursComputed = false;
+    if (isWatertight()) {
+        std::cout << "Successfully closed holes" << std::endl;
+        return true;
+    }
+    std::cout << "Could not close holes successfully" << std::endl;
+    return false;
 }

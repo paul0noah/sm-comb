@@ -73,6 +73,7 @@ public:
     void plot();
     void plot(Eigen::MatrixXd clr);
     void plot(Eigen::MatrixXd clr, igl::opengl::glfw::Viewer &viewer, int viewerDataIdx);
+    bool closeHolesWithTriFan();
     bool closeHoles();
     bool closeHoles(bool doSurfaceFairing);
     Eigen::MatrixXd getCartesianColorMap();

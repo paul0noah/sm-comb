@@ -47,7 +47,7 @@ public:
     NonWatertightMeshHandler(const std::string modelName);
     void writeToFile(const std::string modelName);
     void computeModifyIndices(Constraints &constr);
-    bool fillHoles(Shape &shapeX, Shape &shapeY);
+    bool fillHoles(Shape &shapeX, Shape &shapeY, bool useTriangleFan=false);
     void modifyEnergy(DeformationEnergy &defEnergy, Constraints &constr);
     void modifyEnergy(DeformationEnergy &defEnergy, Constraints &constr, float newEnergyVal);
     void modifyGamma(Eigen::Matrix<int8_t, Eigen::Dynamic, Eigen::Dynamic> &Gamma, Constraints &constr, int8_t newGammaVal);

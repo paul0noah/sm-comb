@@ -82,7 +82,7 @@ void NonWatertightMeshHandler::writeToFile(const std::string modelName) {
     }
 }
 
-bool NonWatertightMeshHandler::fillHoles(Shape &shapeX, Shape &shapeY) {
+bool NonWatertightMeshHandler::fillHoles(Shape &shapeX, Shape &shapeY, bool useTriangleFan) {
     oldNumFacesX      = shapeX.getNumFaces();
     oldNumVerticesX   = shapeX.getNumVertices();
     oldNumEdgesX      = shapeX.getNumEdges();
@@ -93,12 +93,18 @@ bool NonWatertightMeshHandler::fillHoles(Shape &shapeX, Shape &shapeY) {
     if (!shapeX.isWatertight()) {
         didFillHolesOfShapeX = true;
         shapeXHoles = shapeX;
-        shapeX.closeHoles();
+        if (useTriangleFan)
+            shapeX.closeHolesWithTriFan();
+        else
+            shapeX.closeHoles();
     }
     if (!shapeY.isWatertight()) {
         didFillHolesOfShapeY = true;
         shapeYHoles = shapeY;
-        shapeY.closeHoles();
+        if (useTriangleFan)
+            shapeY.closeHolesWithTriFan();
+        else
+            shapeY.closeHoles();
     }
 
     if (!shapeX.isWatertight() && !shapeY.isWatertight()) {
