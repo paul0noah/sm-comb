@@ -340,14 +340,14 @@ void Constraints::getDelOptimizedwithPruneVec(std::vector<TripletInt8>& delEntri
     // find num nondeg and num deg
     const int numEdges = E.rows();
     int numEdgesNonDegenerate = 2 * numEdgesX * numEdgesY;
-    for (long i = 0; i < 2 * numEdgesX * numEdgesY; i++) {
+    for (long i = 0; i < numEdges; i++) {
         if (E(i, 0) == E(i, 1)) {
             numEdgesNonDegenerate = i;
             break;
         }
     }
     int numEdgesYNonDegenerate = numEdgesNonDegenerate + numVerticesX * numEdgesY;
-    for (long i = numEdgesNonDegenerate; i < numEdgesNonDegenerate + numVerticesX * numEdgesY; i++) {
+    for (long i = numEdgesNonDegenerate; i < numEdges; i++) {
         if (E(i, 2) == E(i, 3)) {
             numEdgesYNonDegenerate = i;
             break;
