@@ -588,21 +588,24 @@ void pruneEdgeProductSpaceWithBoundary(Eigen::MatrixXi& E,
         const EDG ex(E(e, 0), E(e, 1));
         const EDG ey(E(e, 2), E(e, 3));
 
-        // prune away edges of dummy triangles and  // lets skip this: prune all product edges which involve boundary edges but NOT boundary matchings
         const bool exIsBoundaryEdge = findEDG(dummyEdgesX, ex);
         const bool eyIsBoundaryEdge = findEDG(dummyEdgesY, ey);
-        if (!(exIsBoundaryEdge && eyIsBoundaryEdge)) {
+        if (!exIsBoundaryEdge != !eyIsBoundaryEdge) { // xor: if one of the edges is boundary or dummy edge we prune it away
             prune = true;
         }
 
         // setboundaryConstraints rhs
-        if (!prune) {
+        if (exIsBoundaryEdge && eyIsBoundaryEdge) { // both edges are boundary
             const PEDG pe(E(e, 0), E(e, 1), E(e, 2), E(e, 3));
             if (findPEdge(boundaryProductEdgesHashMap, pe)) {
                 boundaryConstraints.push_back(std::make_tuple(numE, 1)); // first orientation of product edge will be used as +1 in del operator => rhs must be 1
             }
             else if (findPEdge(invboundaryProductEdgesHashMap, pe)) {
                 boundaryConstraints.push_back(std::make_tuple(numE, -1)); // second orientation of product edge will be used as -1 in del operator => rhs must be 1
+            }
+            else {
+                // we didnt find boudnary edges in boundary matching => prune it
+                prune = true;
             }
         }
 
