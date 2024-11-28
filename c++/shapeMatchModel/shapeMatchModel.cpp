@@ -179,7 +179,7 @@ ShapeMatchModel::ShapeMatchModel(Eigen::MatrixXi FX, Eigen::MatrixXf VX, Eigen::
 }
 
 
-ShapeMatchModel::ShapeMatchModel(Eigen::MatrixXi FX, Eigen::MatrixXf VX, Eigen::MatrixXi FY, Eigen::MatrixXf VY, Eigen::MatrixXi boundaryMatching) :
+ShapeMatchModel::ShapeMatchModel(Eigen::MatrixXi FX, Eigen::MatrixXf VX, Eigen::MatrixXi FY, Eigen::MatrixXf VY, Eigen::MatrixXi boundaryMatching, const bool debugExport) :
 shapeX(Shape(VX, FX)),
 shapeY(Shape(VY, FY)),
 combos(shapeX, shapeY),
@@ -189,6 +189,14 @@ ilpGenerated(false),
 minMarginals(combos.getFaCombo().rows(), 1),
 minMarginalsComputed(false),
 bddsolver(NULL) {
+
+    if (debugExport) {
+        utils::writeMatrixToFile(FX, "fx");
+        utils::writeMatrixToFile(FY, "fy");
+        utils::writeMatrixToFile(VX, "vx");
+        utils::writeMatrixToFile(VY, "vy");
+        utils::writeMatrixToFile(boundaryMatching, "boundary");
+    }
 
     // check inputs
     if (boundaryMatching.cols() != 2) {
@@ -272,6 +280,11 @@ bddsolver(NULL) {
      - modify triangle projection constraints accordingly
      - modify del constraints so that boundary matches exactly
      */
+
+}
+
+ShapeMatchModel::ShapeMatchModel(Eigen::MatrixXi FX, Eigen::MatrixXf VX, Eigen::MatrixXi FY, Eigen::MatrixXf VY, Eigen::MatrixXi boundaryMatching) :
+    ShapeMatchModel(FX, VX, FY, VY, boundaryMatching, false) {
 
 }
 
