@@ -336,7 +336,19 @@ void Constraints::computeConstraintsForBoundaryMatching(const Eigen::VectorX<boo
     constraintVector.reserve(numProjections + boundaryConstraints.size());
     for (const auto tup : boundaryConstraints) {
         const int idx = std::get<0>(tup);
-        const int val = std::get<1>(tup); // -1 or 1
+        int val = 0;
+        bool allvalsequal = true;
+        for (typename Eigen::SparseMatrix<int8_t, Eigen::RowMajor>::InnerIterator it(constraintMatrix, idx); it; ++it) {
+            const int newVal = (int)it.value();
+            if (val == 0)
+                val = newVal;
+            else if (val != newVal) {
+                allvalsequal = false;
+            }
+        }
+        if (!allvalsequal) {
+            std::cout << "BIIIIIG error: not all vals equal of constraint. This should never happen" << std::endl;
+        }
         constraintVector.insert(idx) = val;
     }
     for (int k = numProductEdges; k < numProductEdges + numProjections; k++) {

@@ -640,10 +640,10 @@ void pruneEdgeProductSpaceWithBoundary(Eigen::MatrixXi& E,
         if (exIsBoundaryEdge && eyIsBoundaryEdge) { // both edges are boundary
             const PEDG pe(E(e, 0), E(e, 1), E(e, 2), E(e, 3));
             if (findPEdge(boundaryProductEdgesHashMap, pe)) {
-                boundaryConstraints.push_back(std::make_tuple(numE, -1)); // first orientation of product edge will be used as +1 in del operator => rhs must be 1
+                boundaryConstraints.push_back(std::make_tuple(numE, 1)); // sign is fixed in function computeConstraintsForBoundaryMatching
             }
             else if (findPEdge(invboundaryProductEdgesHashMap, pe)) {
-                boundaryConstraints.push_back(std::make_tuple(numE, 1)); // second orientation of product edge will be used as -1 in del operator => rhs must be 1
+                boundaryConstraints.push_back(std::make_tuple(numE, 1)); // sign is fixed in function computeConstraintsForBoundaryMatching
             }
             else {
                 // we didnt find boudnary edges in boundary matching => prune it
