@@ -499,7 +499,7 @@ namespace std {
     };
     template<> struct equal_to<EDG>{
         constexpr bool operator()(const EDG &lhs, const EDG &rhs) const {
-            return  lhs == rhs;
+            return (lhs.idx0 == rhs.idx0) && (lhs.idx1 == rhs.idx1);;
         }
     };
     template<> struct hash<PEDG> {
@@ -513,7 +513,7 @@ namespace std {
     };
     template<> struct equal_to<PEDG>{
         constexpr bool operator()(const PEDG &lhs, const PEDG &rhs) const {
-            return lhs == rhs;
+            return (lhs.idx0 == rhs.idx0) && (lhs.idx1 == rhs.idx1) && (lhs.idy0 == rhs.idy0) && (lhs.idy1 == rhs.idy1);
         }
     };
 }
