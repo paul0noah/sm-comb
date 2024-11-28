@@ -543,12 +543,20 @@ std::unordered_set<EDG> findDummyAndBoundaryEdges(Shape& shapeX, const int nFXHo
         const EDG e1_1 = EDG(FX(i, 2), FX(i, 1));
         const EDG e1_2 = EDG(FX(i, 0), FX(i, 2));
 
+        // degenerate edges
+        const EDG ed_0 = EDG(FX(i, 0), FX(i, 0));
+        const EDG ed_1 = EDG(FX(i, 1), FX(i, 1));
+        const EDG ed_2 = EDG(FX(i, 2), FX(i, 2));
+
         dummyEdgesX.insert(e0_0);
         dummyEdgesX.insert(e1_0);
         dummyEdgesX.insert(e0_1);
         dummyEdgesX.insert(e1_1);
         dummyEdgesX.insert(e0_2);
         dummyEdgesX.insert(e1_2);
+        dummyEdgesX.insert(ed_0);
+        dummyEdgesX.insert(ed_1);
+        dummyEdgesX.insert(ed_2);
     }
     return dummyEdgesX;
 }
@@ -563,12 +571,18 @@ void pruneEdgeProductSpaceWithBoundary(Eigen::MatrixXi& E,
                                        Shape shapeX,
                                        Shape shapeY) {
     // compute boundary product edges
-    Eigen::MatrixXi boundaryProductEdges(boundaryMatching.rows()-1, 4); boundaryProductEdges.setConstant(-1);
+    Eigen::MatrixXi boundaryProductEdges(2 * boundaryMatching.rows()-2, 4); boundaryProductEdges.setConstant(-1);
     std::unordered_set<PEDG> boundaryProductEdgesHashMap, invboundaryProductEdgesHashMap;
-    for (int i = 0; i < boundaryProductEdges.rows(); i++) {
-        boundaryProductEdges.row(i) << boundaryMatching(i, 0), boundaryMatching(i+1, 0), boundaryMatching(i, 1), boundaryMatching(i+1, 1);
-        boundaryProductEdgesHashMap.insert(    PEDG(boundaryProductEdges(i, 0), boundaryProductEdges(i, 1), boundaryProductEdges(i, 2), boundaryProductEdges(i, 3)) );
-        invboundaryProductEdgesHashMap.insert( PEDG(boundaryProductEdges(i, 1), boundaryProductEdges(i, 0), boundaryProductEdges(i, 3), boundaryProductEdges(i, 2)) );
+    int numAdded = 0;
+    for (int i = 0; i < boundaryMatching.rows()-1; i++) {
+        boundaryProductEdges.row(numAdded) << boundaryMatching(i, 0), boundaryMatching(i+1, 0), boundaryMatching(i, 1), boundaryMatching(i+1, 1);
+        numAdded++;
+        boundaryProductEdges.row(numAdded) << boundaryMatching(i, 0), boundaryMatching(i+1, 0), boundaryMatching(i+1, 1), boundaryMatching(i, 1);
+        numAdded++;
+        boundaryProductEdgesHashMap.insert(    PEDG(boundaryProductEdges(numAdded-2, 0), boundaryProductEdges(numAdded-2, 1), boundaryProductEdges(numAdded-2, 2), boundaryProductEdges(numAdded-2, 3)) );
+        //boundaryProductEdgesHashMap.insert(    PEDG(boundaryProductEdges(numAdded-1, 1), boundaryProductEdges(numAdded-1, 0), boundaryProductEdges(numAdded-1, 2), boundaryProductEdges(numAdded-1, 3)) );
+        invboundaryProductEdgesHashMap.insert( PEDG(boundaryProductEdges(numAdded-2, 1), boundaryProductEdges(numAdded-2, 0), boundaryProductEdges(numAdded-2, 3), boundaryProductEdges(numAdded-2, 2)) );
+        //invboundaryProductEdgesHashMap.insert( PEDG(boundaryProductEdges(numAdded-1, 0), boundaryProductEdges(numAdded-1, 1), boundaryProductEdges(numAdded-1, 3), boundaryProductEdges(numAdded-1, 2)) );
     }
     if ((boundaryProductEdges.array() == -1).any()) {
         std::cout << "ERROR: did not add as many boundary matchings as expected" << std::endl;
@@ -598,10 +612,10 @@ void pruneEdgeProductSpaceWithBoundary(Eigen::MatrixXi& E,
         if (exIsBoundaryEdge && eyIsBoundaryEdge) { // both edges are boundary
             const PEDG pe(E(e, 0), E(e, 1), E(e, 2), E(e, 3));
             if (findPEdge(boundaryProductEdgesHashMap, pe)) {
-                boundaryConstraints.push_back(std::make_tuple(numE, 1)); // first orientation of product edge will be used as +1 in del operator => rhs must be 1
+                boundaryConstraints.push_back(std::make_tuple(numE, -1)); // first orientation of product edge will be used as +1 in del operator => rhs must be 1
             }
             else if (findPEdge(invboundaryProductEdgesHashMap, pe)) {
-                boundaryConstraints.push_back(std::make_tuple(numE, -1)); // second orientation of product edge will be used as -1 in del operator => rhs must be 1
+                boundaryConstraints.push_back(std::make_tuple(numE, 1)); // second orientation of product edge will be used as -1 in del operator => rhs must be 1
             }
             else {
                 // we didnt find boudnary edges in boundary matching => prune it

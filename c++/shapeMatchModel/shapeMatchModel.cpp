@@ -227,7 +227,8 @@ bddsolver(NULL) {
             PruneVec(f) = false;
         }
     }
-    for (int y = nonWatertightMeshHandler.getShapeYWithHoles().getNumFaces(); y < shapeY.getNumFaces(); y++) {
+    const int offset = shapeX.getNumFaces();
+    for (int y = offset + nonWatertightMeshHandler.getShapeYWithHoles().getNumFaces(); y < offset + shapeY.getNumFaces(); y++) {
         for (typename Eigen::SparseMatrix<int8_t, Eigen::RowMajor>::InnerIterator it(proj, y); it; ++it) {
             const int f = it.index();
             PruneVec(f) = false;
