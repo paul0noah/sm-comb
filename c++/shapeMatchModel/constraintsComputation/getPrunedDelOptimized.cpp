@@ -13,6 +13,7 @@
 #include <iostream>
 #include <igl/cumsum.h>
 #include <tsl/robin_set.h>
+#include <unordered_set>
 #if defined(_OPENMP)
     #include <omp.h>
 #else
@@ -516,21 +517,21 @@ namespace std {
     };
 }
 
-bool findEDG(const tsl::robin_set<EDG> &ELookup, const EDG &edg) {
+bool findEDG(const std::unordered_set<EDG> &ELookup, const EDG &edg) {
     const auto it = ELookup.find(edg);
     if (it != ELookup.end())
         return true;
     return false;
 }
-bool findPEdge(const tsl::robin_set<PEDG> &ELookup, const PEDG &edg) {
+bool findPEdge(const std::unordered_set<PEDG> &ELookup, const PEDG &edg) {
     const auto it = ELookup.find(edg);
     if (it != ELookup.end())
         return true;
     return false;
 }
 
-tsl::robin_set<EDG> findDummyAndBoundaryEdges(Shape& shapeX, const int nFXHoles) {
-    tsl::robin_set<EDG> dummyEdgesX;
+std::unordered_set<EDG> findDummyAndBoundaryEdges(Shape& shapeX, const int nFXHoles) {
+    std::unordered_set<EDG> dummyEdgesX;
     const Eigen::MatrixXi FX = shapeX.getF();
     for (int i = nFXHoles; i < shapeX.getNumFaces(); i++) { // this loop follows convention how the product space is built up
         const EDG e0_0 = EDG(FX(i, 0), FX(i, 1));
@@ -563,7 +564,7 @@ void pruneEdgeProductSpaceWithBoundary(Eigen::MatrixXi& E,
                                        Shape shapeY) {
     // compute boundary product edges
     Eigen::MatrixXi boundaryProductEdges(boundaryMatching.rows()-1, 4); boundaryProductEdges.setConstant(-1);
-    tsl::robin_set<PEDG> boundaryProductEdgesHashMap, invboundaryProductEdgesHashMap;
+    std::unordered_set<PEDG> boundaryProductEdgesHashMap, invboundaryProductEdgesHashMap;
     for (int i = 0; i < boundaryProductEdges.rows(); i++) {
         boundaryProductEdges.row(i) << boundaryMatching(i, 0), boundaryMatching(i+1, 0), boundaryMatching(i, 1), boundaryMatching(i+1, 1);
         boundaryProductEdgesHashMap.insert(    PEDG(boundaryProductEdges(i, 0), boundaryProductEdges(i, 1), boundaryProductEdges(i, 2), boundaryProductEdges(i, 3)) );
@@ -574,9 +575,8 @@ void pruneEdgeProductSpaceWithBoundary(Eigen::MatrixXi& E,
     }
 
     // find dummy edges
-    const tsl::robin_set<EDG> dummyEdgesX = findDummyAndBoundaryEdges(shapeX, nFXHoles);
-    const tsl::robin_set<EDG> dummyEdgesY = findDummyAndBoundaryEdges(shapeY, nFYHoles);
-
+    const std::unordered_set<EDG> dummyEdgesX = findDummyAndBoundaryEdges(shapeX, nFXHoles);
+    const std::unordered_set<EDG> dummyEdgesY = findDummyAndBoundaryEdges(shapeY, nFYHoles);
 
     Eigen::MatrixXi prunedE(E.rows(), 4);
     Eigen::MatrixXi prunedEToEXTranslator(E.rows(), 1);
