@@ -51,6 +51,6 @@ PYBIND11_MODULE(shape_match_model_pb, handle) {
     smm.def("getEdgesX", &ShapeMatchModel::getEdgesX);
     smm.def("getEdgesY", &ShapeMatchModel::getEdgesY);
 
-    py::class_<LPMP::ILP_input>(handle, "ILP_instance")
+    py::class_<LPMP::ILP_input>(handle, "ILP_instance", py::module_local())
         .def(py::init<>());
 }
