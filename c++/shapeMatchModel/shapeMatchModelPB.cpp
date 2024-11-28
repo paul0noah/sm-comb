@@ -23,6 +23,7 @@ PYBIND11_MODULE(shape_match_model_pb, handle) {
     smm.def(py::init<Eigen::MatrixXi, Eigen::MatrixXf, Eigen::MatrixXi, Eigen::MatrixXf>());
     smm.def(py::init<Eigen::MatrixXi, Eigen::MatrixXf, Eigen::MatrixXi, Eigen::MatrixXf, Eigen::MatrixXi, Eigen::MatrixXi, Eigen::MatrixXi>());
     smm.def(py::init<Eigen::MatrixXi, Eigen::MatrixXf, Eigen::MatrixXi, Eigen::MatrixXf, Eigen::MatrixXi, Eigen::MatrixXi, Eigen::MatrixXi, int>());
+    smm.def(py::init<Eigen::MatrixXi, Eigen::MatrixXf, Eigen::MatrixXi, Eigen::MatrixXf, Eigen::MatrixXi>()); // bound
     smm.def("updateEnergy", &ShapeMatchModel::updateEnergy);
     smm.def("solve", &ShapeMatchModel::solve);
     smm.def("getPointMatchesFromSolution", &ShapeMatchModel::getPointMatchesFromSolution);
