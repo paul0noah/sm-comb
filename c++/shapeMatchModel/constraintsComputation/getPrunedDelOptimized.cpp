@@ -12,6 +12,7 @@
 #include "Eigen/Sparse"
 #include <iostream>
 #include <igl/cumsum.h>
+#include <igl/boundary_loop.h>
 #include <tsl/robin_set.h>
 #include <unordered_set>
 #if defined(_OPENMP)
@@ -530,35 +531,50 @@ bool findPEdge(const std::unordered_set<PEDG> &ELookup, const PEDG &edg) {
     return false;
 }
 
-std::unordered_set<EDG> findDummyAndBoundaryEdges(Shape& shapeX, const int nFXHoles) {
+std::tuple<std::unordered_set<EDG>, std::unordered_set<EDG>> findDummyAndBoundaryEdges(Shape& shapeX, const int nFXHoles) {
     std::unordered_set<EDG> dummyEdgesX;
     const Eigen::MatrixXi FX = shapeX.getF();
+    const int numDummyFaces = shapeX.getNumFaces() - nFXHoles;
+
+    std::vector<size_t> boundary; boundary.reserve(numDummyFaces + 3);
+    igl::boundary_loop(FX.block(nFXHoles, 0, numDummyFaces, 3), boundary);
+    boundary.push_back(boundary.front());
+    std::unordered_set<EDG> boundaryEdgesX;
+    for (int i = 0; i < boundary.size()-1; i++) {
+        const EDG e0 = EDG(boundary.at(i), boundary.at(i+1));
+        const EDG e1 = EDG(boundary.at(i+1), boundary.at(i));
+        const EDG ed = EDG(boundary.at(i), boundary.at(i));
+        boundaryEdgesX.insert(e0);
+        boundaryEdgesX.insert(e1);
+        boundaryEdgesX.insert(ed);
+    }
+
     for (int i = nFXHoles; i < shapeX.getNumFaces(); i++) { // this loop follows convention how the product space is built up
         const EDG e0_0 = EDG(FX(i, 0), FX(i, 1));
         const EDG e0_1 = EDG(FX(i, 1), FX(i, 2));
         const EDG e0_2 = EDG(FX(i, 2), FX(i, 0));
 
-        // one of the edges must be in next triangle
         const EDG e1_0 = EDG(FX(i, 1), FX(i, 0));
         const EDG e1_1 = EDG(FX(i, 2), FX(i, 1));
         const EDG e1_2 = EDG(FX(i, 0), FX(i, 2));
 
-        // degenerate edges
-        const EDG ed_0 = EDG(FX(i, 0), FX(i, 0));
-        const EDG ed_1 = EDG(FX(i, 1), FX(i, 1));
-        const EDG ed_2 = EDG(FX(i, 2), FX(i, 2));
 
-        dummyEdgesX.insert(e0_0);
-        dummyEdgesX.insert(e1_0);
-        dummyEdgesX.insert(e0_1);
-        dummyEdgesX.insert(e1_1);
-        dummyEdgesX.insert(e0_2);
-        dummyEdgesX.insert(e1_2);
-        dummyEdgesX.insert(ed_0);
-        dummyEdgesX.insert(ed_1);
-        dummyEdgesX.insert(ed_2);
+        // if the edge is no boundary edge it has to be a dummy edge
+        if (!findEDG(boundaryEdgesX, e0_0))
+            dummyEdgesX.insert(e0_0);
+        if (!findEDG(boundaryEdgesX, e1_0))
+            dummyEdgesX.insert(e1_0);
+        if (!findEDG(boundaryEdgesX, e0_1))
+            dummyEdgesX.insert(e0_1);
+        if (!findEDG(boundaryEdgesX, e1_1))
+            dummyEdgesX.insert(e1_1);
+        if (!findEDG(boundaryEdgesX, e0_2))
+            dummyEdgesX.insert(e0_2);
+        if (!findEDG(boundaryEdgesX, e1_2))
+            dummyEdgesX.insert(e1_2);
+
     }
-    return dummyEdgesX;
+    return std::make_tuple(boundaryEdgesX, dummyEdgesX);
 }
 
 void pruneEdgeProductSpaceWithBoundary(Eigen::MatrixXi& E,
@@ -589,22 +605,34 @@ void pruneEdgeProductSpaceWithBoundary(Eigen::MatrixXi& E,
     }
 
     // find dummy edges
-    const std::unordered_set<EDG> dummyEdgesX = findDummyAndBoundaryEdges(shapeX, nFXHoles);
-    const std::unordered_set<EDG> dummyEdgesY = findDummyAndBoundaryEdges(shapeY, nFYHoles);
+    const auto dummyAndBoundaryEdgesX = findDummyAndBoundaryEdges(shapeX, nFXHoles);
+    const std::unordered_set<EDG> boundaryEdgesX = std::get<0>(dummyAndBoundaryEdgesX);
+    const std::unordered_set<EDG> dummyEdgesX = std::get<1>(dummyAndBoundaryEdgesX);
+    const auto dummyAndBoundaryEdgesY = findDummyAndBoundaryEdges(shapeY, nFYHoles);
+    const std::unordered_set<EDG> boundaryEdgesY = std::get<0>(dummyAndBoundaryEdgesY);
+    const std::unordered_set<EDG> dummyEdgesY = std::get<1>(dummyAndBoundaryEdgesY);
 
     Eigen::MatrixXi prunedE(E.rows(), 4);
     Eigen::MatrixXi prunedEToEXTranslator(E.rows(), 1);
     Eigen::MatrixXi prunedEToEYTranslator(E.rows(), 1);
+    //std::cout << boundaryMatching << std::endl;
+    //std::cout << boundaryProductEdgesHashMap.size() << " asdfasdf " << invboundaryProductEdgesHashMap.size() << std::endl;
+    //std::cout << "++++" << std::endl;
     long numE = 0;
     for (long e = 0; e < E.rows(); e++) {
         bool prune = false;
 
         const EDG ex(E(e, 0), E(e, 1));
         const EDG ey(E(e, 2), E(e, 3));
+        const bool isDeg = (E(e, 0) == E(e, 1)) || (E(e, 2) == E(e, 3));
 
-        const bool exIsBoundaryEdge = findEDG(dummyEdgesX, ex);
-        const bool eyIsBoundaryEdge = findEDG(dummyEdgesY, ey);
-        if (!exIsBoundaryEdge != !eyIsBoundaryEdge) { // xor: if one of the edges is boundary or dummy edge we prune it away
+        const bool exIsBoundaryEdge = findEDG(boundaryEdgesX, ex);
+        const bool eyIsBoundaryEdge = findEDG(boundaryEdgesY, ey);
+        // never!!!! :D prune boundary product edges if not degenerate and onle one of both is boundary edge
+        const bool pruneBoundaryEdges = (!exIsBoundaryEdge != !eyIsBoundaryEdge) && !isDeg;
+        const bool exIsDummyEdge = findEDG(dummyEdgesX, ex);
+        const bool eyIsDummyEdge = findEDG(dummyEdgesY, ey);
+        if (exIsDummyEdge || eyIsDummyEdge) {
             prune = true;
         }
 
