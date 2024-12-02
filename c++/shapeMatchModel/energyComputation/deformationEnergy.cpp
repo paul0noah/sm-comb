@@ -33,7 +33,7 @@ DeformationEnergy::DeformationEnergy(Shape& sA, Shape& sB, Combinations& c) :
           | 2 * memE(ShapeA, ShapeB); B degenerate
    and deformationEnergy = memE + lambda * bendE + mu * wksE
  */
-Eigen::MatrixXf DeformationEnergy::get() {
+Eigen::MatrixXf DeformationEnergy::get(const bool withWKS) {
     if(computed) {
         return defEnergy;
     }
@@ -54,7 +54,7 @@ Eigen::MatrixXf DeformationEnergy::get() {
     
     // lambda models material properties
     const float lambda = 5;
-    const float mu = 1;
+    const float mu = withWKS ? 1 : 0;
     Eigen::MatrixXf deformationEnergy(numNonDegenerate + numDegenerateA + numDegenerateB, 1);
     
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
@@ -120,6 +120,10 @@ Eigen::MatrixXf DeformationEnergy::get() {
     defEnergy = deformationEnergy;
     computed = true;
     return deformationEnergy;
+}
+
+Eigen::MatrixXf DeformationEnergy::get() {
+    return get(false);
 }
 
 void DeformationEnergy::modifyEnergyVal(const int index, float newVal) {
@@ -251,6 +255,24 @@ void DeformationEnergy::useCustomDeformationEnergy(const Eigen::MatrixXf& Vx2VyC
          std::cout << "Mean membrane energy: " << memE.array().mean() << std::endl;
         defEnergy = lambda * defEnergy + memE;
     }
+}
+
+void DeformationEnergy::addFeatureDifference(const Eigen::MatrixXf& Vx2VyCostMatrix, float weightFeature) {
+    if (!computed) {
+        get();
+    }
+
+    const Eigen::MatrixXi& FaCombo = combos.getFaCombo();
+    const Eigen::MatrixXi& FbCombo = combos.getFbCombo();
+
+    Eigen::MatrixXf energy(FaCombo.rows(), 1);
+    energy.setZero();
+    for (int j = 0; j < FaCombo.rows(); j++) {
+        for (int i = 0; i < 3; i++) {
+            energy(j, 0) += Vx2VyCostMatrix(FaCombo(j, i), FbCombo(j, i));
+        }
+    }
+    defEnergy = defEnergy + weightFeature * energy;
 }
 
 void DeformationEnergy::prune(const Eigen::VectorX<bool>& pruneVec) {

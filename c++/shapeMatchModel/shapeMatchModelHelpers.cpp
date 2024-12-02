@@ -184,6 +184,15 @@ void ShapeMatchModel::updateEnergy(const Eigen::MatrixXf& Vx2VyCost, bool weight
     deformationEnergy.useCustomDeformationEnergy(Vx2VyCost, weightWithAreas, useMemReg, lambda);
 }
 
+void ShapeMatchModel::updateEnergy(const Eigen::MatrixXf& Vx2VyCost, bool useElastic, float weightFeature) {
+    if (useElastic) {
+        deformationEnergy.addFeatureDifference(Vx2VyCost, weightFeature);
+    }
+    else {
+        deformationEnergy.useCustomDeformationEnergy(Vx2VyCost, false, false, 1.0);
+    }
+}
+
 
 void ShapeMatchModel::constantPenaliseDegenerate(float addval) {
     deformationEnergy.constantPenaliseDegenerate(addval);

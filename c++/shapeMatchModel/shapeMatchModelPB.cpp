@@ -25,7 +25,8 @@ PYBIND11_MODULE(shape_match_model_pb, handle) {
     smm.def(py::init<Eigen::MatrixXi, Eigen::MatrixXf, Eigen::MatrixXi, Eigen::MatrixXf, Eigen::MatrixXi, Eigen::MatrixXi, Eigen::MatrixXi, int>());
     smm.def(py::init<Eigen::MatrixXi, Eigen::MatrixXf, Eigen::MatrixXi, Eigen::MatrixXf, Eigen::MatrixXi>()); // bound
     smm.def(py::init<Eigen::MatrixXi, Eigen::MatrixXf, Eigen::MatrixXi, Eigen::MatrixXf, Eigen::MatrixXi, bool>()); // bound
-    smm.def("updateEnergy", &ShapeMatchModel::updateEnergy);
+    smm.def("updateEnergy", pybind11::overload_cast<const Eigen::MatrixXf&, bool, float>(&ShapeMatchModel::updateEnergy));
+    smm.def("updateEnergy", pybind11::overload_cast<const Eigen::MatrixXf&, bool, bool, float>(&ShapeMatchModel::updateEnergy));
     smm.def("solve", &ShapeMatchModel::solve);
     smm.def("getPointMatchesFromSolution", &ShapeMatchModel::getPointMatchesFromSolution);
     smm.def("plotSolution", &ShapeMatchModel::plotInterpolatedSolution);

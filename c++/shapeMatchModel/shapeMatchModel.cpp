@@ -190,6 +190,7 @@ minMarginals(combos.getFaCombo().rows(), 1),
 minMarginalsComputed(false),
 bddsolver(NULL) {
 
+    const bool computeEnergies = true;
     if (debugExport) {
         utils::writeMatrixToFile(FX, "fx");
         utils::writeMatrixToFile(FY, "fy");
@@ -252,11 +253,17 @@ bddsolver(NULL) {
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     if (opts.verbose) std::cout << "[ShapeMM]   > Product Space" << std::endl;
     combos.getFaCombo();
+    if (computeEnergies) deformationEnergy.get();
     combos.prune(PruneVec);
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     if (opts.verbose) std::cout << "[ShapeMM]   Done (" << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << "  [ms])" << std::endl;
     if (opts.verbose) std::cout << "[ShapeMM]   > Energies" << std::endl;
-    if (opts.verbose) std::cout << "[ShapeMM]     => skipping (contact project owner if you need this)" << std::endl;
+    if (computeEnergies) {
+        deformationEnergy.prune(PruneVec);
+    }
+    else {
+        if (opts.verbose) std::cout << "[ShapeMM]     => skipping (contact project owner if you need this)" << std::endl;
+    }
     std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
     if (opts.verbose) std::cout << "[ShapeMM]   Done (" << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count() << "  [ms])" << std::endl;
 
