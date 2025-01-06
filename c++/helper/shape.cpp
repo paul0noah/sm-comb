@@ -18,6 +18,7 @@
 #include <tmhc/close_holes.h>
 #include <tmhc/find_holes.h>
 #include <tsl/robin_set.h>
+#include <unordered_set>
 
 
 Shape::Shape() {
@@ -759,6 +760,47 @@ bool Shape::closeHolesWithTriFan() {
     if (boundary_loop.front() == boundary_loop.back()) {
         std::cout << "Did not expect boundary loop to have front == back. PLs adjust code accordingly" << std::endl;
     }
+
+    // make sure that we do not use a vertex as start for triangle fan which creates non-manifoldness of closed shapes
+    // in particular these are vertices part of border triangles
+    if (boundary_loop.size() > 3) {
+
+        Eigen::MatrixX<bool> isVertexBoundaryVertex(V.rows(), 1);
+        isVertexBoundaryVertex.setConstant(false);
+        for (const auto& element : boundary_loop) {
+            isVertexBoundaryVertex(element, 0) = true;
+        }
+
+        std::unordered_set<int> verticesBeeingPartOfCornerBoundaryTriangle;
+        for (int f = 0; f < F.rows(); f++) {
+            const int v0 = F(f, 0); const int v1 = F(f, 1); const int v2 = F(f, 2);
+            if (isVertexBoundaryVertex(v0) && isVertexBoundaryVertex(v1) && isVertexBoundaryVertex(v2)) {
+                verticesBeeingPartOfCornerBoundaryTriangle.insert(v0);
+                verticesBeeingPartOfCornerBoundaryTriangle.insert(v1);
+                verticesBeeingPartOfCornerBoundaryTriangle.insert(v2);
+            }
+        }
+
+        bool didFindValidStartVertex = false;
+        for (int shift = 0; shift < boundary_loop.size(); shift++) {
+            const bool isValidStartVertex = verticesBeeingPartOfCornerBoundaryTriangle.find(boundary_loop[0]) == verticesBeeingPartOfCornerBoundaryTriangle.end();
+            if (isValidStartVertex) {
+                didFindValidStartVertex = true;
+                break;
+            }
+            // if not  we shift the boundary_loop vector
+            const size_t temp = boundary_loop[0];
+            for (int i = 0; i < boundary_loop.size() - 1; i++) {
+                boundary_loop[i] = boundary_loop[i+1];
+            }
+            boundary_loop[boundary_loop.size()-1] = temp;
+        }
+
+        if (!didFindValidStartVertex) {
+            std::cout << "Did not find valid start vertex. Closing shapes without inducing non-manifoldness not possible with current impl." << std::endl;
+        }
+    }
+
     boundary_loop.push_back(boundary_loop.front());
 
     int f = F.rows();
