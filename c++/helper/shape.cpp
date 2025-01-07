@@ -11,7 +11,6 @@
 #include <igl/decimate.h>
 #include <igl/qslim.h>
 #include <igl/boundary_loop.h>
-#include <igl/bfs_orient.h>
 #include "shape.hpp"
 #include "helper/utils.hpp"
 #include <iostream>
@@ -241,6 +240,7 @@ void Shape::computeEdges() {
     }
 
     LocEinF = LocEinFwork.block(0, 0, numEdgesAdded, 2);
+    //std::cout << LocEinF << std::endl;
     E = Ework.block(0, 0, numEdgesAdded, 2);
 
     // Watertightness check
@@ -762,28 +762,66 @@ bool Shape::closeHolesWithTriFan() {
     }
 
     // make sure that we do not use a vertex as start for triangle fan which creates non-manifoldness of closed shapes
-    // in particular these are vertices part of border triangles
+    bool didFindValidStartVertex = true;
     if (boundary_loop.size() > 3) {
-
+        didFindValidStartVertex = false;
         Eigen::MatrixX<bool> isVertexBoundaryVertex(V.rows(), 1);
         isVertexBoundaryVertex.setConstant(false);
-        for (const auto& element : boundary_loop) {
-            isVertexBoundaryVertex(element, 0) = true;
+        tsl::robin_set<EDG> BoundaryEdges; BoundaryEdges.reserve((boundary_loop.size() + 1 ) * 2);
+
+        for (int i = 0; i < boundary_loop.size(); i++) {
+            isVertexBoundaryVertex(boundary_loop[i], 0) = true;
+            const int ii = (i+1) % boundary_loop.size();
+            BoundaryEdges.insert(EDG(boundary_loop[i], boundary_loop[ii], 1));
+            BoundaryEdges.insert(EDG(boundary_loop[ii], boundary_loop[i], 0));
         }
 
-        std::unordered_set<int> verticesBeeingPartOfCornerBoundaryTriangle;
+        bool determinedOrientationOfboundaryLoop = false;
+        bool boundaryLoopInCorrectOrientation = false;
+
+        std::unordered_set<int> verticesBeeingPartOfTwoBoundaryEdgesOfOneTriangle;
+        std::unordered_set<int> verticesBeeingPartOfTrianglesWithOnlyBoundaryVertices;
         for (int f = 0; f < F.rows(); f++) {
+            const EDG edge0 = EDG(F(f, 0), F(f, 1), 0);
+            const EDG edge1 = EDG(F(f, 1), F(f, 2), 0);
+            const EDG edge2 = EDG(F(f, 2), F(f, 0), 0);
+            const int idxEdge0 = findEdge(BoundaryEdges, edge0);
+            const int idxEdge1 = findEdge(BoundaryEdges, edge1);
+            const int idxEdge2 = findEdge(BoundaryEdges, edge2);
+            const int edge0IsBoundaryEdge = idxEdge0 != -1;
+            const int edge1IsBoundaryEdge = idxEdge1 != -1;
+            const int edge2IsBoundaryEdge = idxEdge2 != -1;
+            int numAttachedBoundaryEdges = (int) edge0IsBoundaryEdge + (int) edge1IsBoundaryEdge + (int) edge2IsBoundaryEdge;
             const int v0 = F(f, 0); const int v1 = F(f, 1); const int v2 = F(f, 2);
-            if (isVertexBoundaryVertex(v0) && isVertexBoundaryVertex(v1) && isVertexBoundaryVertex(v2)) {
-                verticesBeeingPartOfCornerBoundaryTriangle.insert(v0);
-                verticesBeeingPartOfCornerBoundaryTriangle.insert(v1);
-                verticesBeeingPartOfCornerBoundaryTriangle.insert(v2);
+            if (numAttachedBoundaryEdges > 1) {
+                if (!determinedOrientationOfboundaryLoop) {
+                    const int orient = std::max(findEdge(BoundaryEdges, edge0), findEdge(BoundaryEdges, edge1));
+                    boundaryLoopInCorrectOrientation = orient == 0; // this means opposite orientation
+                    determinedOrientationOfboundaryLoop = true;
+                }
+                if (edge0IsBoundaryEdge && edge1IsBoundaryEdge)
+                    verticesBeeingPartOfTwoBoundaryEdgesOfOneTriangle.insert(v1);
+                else if (edge1IsBoundaryEdge && edge2IsBoundaryEdge)
+                    verticesBeeingPartOfTwoBoundaryEdgesOfOneTriangle.insert(v2);
+                else if (edge2IsBoundaryEdge && edge0IsBoundaryEdge)
+                    verticesBeeingPartOfTwoBoundaryEdgesOfOneTriangle.insert(v0);
+            }
+            if ((isVertexBoundaryVertex(v0) && isVertexBoundaryVertex(v1) && isVertexBoundaryVertex(v2))) {
+                verticesBeeingPartOfTrianglesWithOnlyBoundaryVertices.insert(v0);
+                verticesBeeingPartOfTrianglesWithOnlyBoundaryVertices.insert(v1);
+                verticesBeeingPartOfTrianglesWithOnlyBoundaryVertices.insert(v2);
             }
         }
 
-        bool didFindValidStartVertex = false;
+        if (!boundaryLoopInCorrectOrientation) {
+            std::reverse(boundary_loop.begin(), boundary_loop.end());
+        }
+
         for (int shift = 0; shift < boundary_loop.size(); shift++) {
-            const bool isValidStartVertex = verticesBeeingPartOfCornerBoundaryTriangle.find(boundary_loop[0]) == verticesBeeingPartOfCornerBoundaryTriangle.end();
+            const bool isCornerVertex = verticesBeeingPartOfTwoBoundaryEdgesOfOneTriangle.find(boundary_loop[0]) != verticesBeeingPartOfTwoBoundaryEdgesOfOneTriangle.end();
+            const bool notIsPartOfTriangleWithOnlyBoundaryVertices =
+                    verticesBeeingPartOfTrianglesWithOnlyBoundaryVertices.find(boundary_loop[0]) == verticesBeeingPartOfTrianglesWithOnlyBoundaryVertices.end();
+            const bool isValidStartVertex = isCornerVertex || notIsPartOfTriangleWithOnlyBoundaryVertices;
             if (isValidStartVertex) {
                 didFindValidStartVertex = true;
                 break;
@@ -795,15 +833,13 @@ bool Shape::closeHolesWithTriFan() {
             }
             boundary_loop[boundary_loop.size()-1] = temp;
         }
-
         if (!didFindValidStartVertex) {
             std::cout << "Did not find valid start vertex. Closing shapes without inducing non-manifoldness not possible with current impl." << std::endl;
         }
     }
 
-    boundary_loop.push_back(boundary_loop.front());
-
     int f = F.rows();
+    boundary_loop.push_back(boundary_loop.front());
     for (int i = 1; i < boundary_loop.size()-2; i++) {
         Fclosed.row(f) << boundary_loop.at(0), boundary_loop.at(i), boundary_loop.at(i+1);
         f++;
@@ -814,11 +850,11 @@ bool Shape::closeHolesWithTriFan() {
     }
 
     Eigen::MatrixXi componentIds(Fclosed.rows(), 1); componentIds.setZero();
-    igl::bfs_orient(Fclosed, Fclosed, componentIds);
 
     F = Fclosed;
     edgesComputed = false;
     triangleNeighboursComputed = false;
+
     if (isWatertight()) {
         std::cout << "Successfully closed holes" << std::endl;
         return true;
