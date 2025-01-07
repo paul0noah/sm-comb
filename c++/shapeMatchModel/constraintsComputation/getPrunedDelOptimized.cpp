@@ -64,7 +64,7 @@ inline void Constraints::checkFacePRUNED(const Eigen::VectorX<bool>& pruneVec, c
 
 
 static int oldVertexIdx = -1;
-static Eigen::MatrixXi IDX(20, 2);
+static Eigen::MatrixXi IDX(50, 2);
 static Eigen::MatrixXi numIDX(1, 2);
 void Constraints::findVerticesInEdgesMatrixPRUNED(const int vertexIdx, Shape &shape, Eigen::MatrixXi &idxes, Eigen::MatrixXi &numIdxes) {
     assert(idxes.rows() == IDX.rows());

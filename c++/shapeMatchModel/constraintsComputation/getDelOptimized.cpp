@@ -48,7 +48,7 @@ void Constraints::checkFace(std::vector<TripletInt8> &delEntries, Eigen::MatrixX
  % This function stores its result and if vertexIdx changes, it updates its values.
  */
 static int oldVertexIdx = -1;
-static Eigen::MatrixXi IDX(20, 2);
+static Eigen::MatrixXi IDX(50, 2);
 static Eigen::MatrixXi numIDX(1, 2);
 void Constraints::findVerticesInEdgesMatrix(const int vertexIdx, Shape &shape, Eigen::MatrixXi &idxes, Eigen::MatrixXi &numIdxes) {
     assert(idxes.rows() == IDX.rows());
